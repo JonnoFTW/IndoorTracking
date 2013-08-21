@@ -1,0 +1,11 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:yourapp="http://schemas.android.com/apk/res-auto" >
+    <item android:id="@+id/action_settings"
+          android:icon="@android:drawable/ic_menu_preferences"
+          android:title="@string/ab_title_settings"
+          android:showAsAction="ifRoom|withText"  />
+        <item android:id="@+id/action_help"
+          android:icon="@android:drawable/ic_menu_help"
+          android:title="@string/ab_title_help"
+          android:showAsAction="ifRoom|withText"  />
+</menu>

@@ -1,8 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
 
     <string name="app_name">IndoorTracking</string>
     <string name="hello_world">Hello cruel world!</string>
     <string name="menu_settings">Settings</string>
-    <string name="title_activity_main">MainActivity</string>
+    <string name="title_activity_main">Indoor Tracking</string>
+    <string name="title_activity_setup">SetupActivity</string>
+    <string name="edit_message">Your message here!</string>
+    <string name="button_send">Send</string>
+    <string name="title_activity_display_message">My Message</string>
+    <string name="ab_title_help">Help</string>
+    <string name="ab_title_settings">Settings</string>
+    <string name="settings_height">Height (cm)</string>
+    <string name="settings_female">Female</string>
+    <string name="settings_male">Male</string>
+    <string name="settings_text_sex">Sex</string>
+    <string name="settings_text_height">Height</string>
+    <string name="settings_show_graph">Show Accelerometer Graph</string>
+    <string name="title_activity_help">Help</string>
+    <string name="main_map_descr">Map of the IST building</string>
+    <string name="help_text">Walk around</string>
+    <string name="action_settings">Settings</string>
+    <string name="yaw">Yaw</string>
+    <string name="pitch">Pitch</string>
+    <string name="roll">Roll</string>
 
 </resources>

@@ -1,0 +1,25 @@
+<resources>
+
+    <string name="title_activity_settings">Settings</string>
+
+    <!-- Strings related to Settings -->
+
+
+    <!-- Example General settings -->
+    <string name="pref_header_general">General</string>
+    <string name="pref_enable_graph">Enable Graph</string>
+    <string name="pref_enable_graph_descr">Enable the Accelerometer Graph</string>
+    <string name="pref_title_height">Height (cm)</string>
+    <string name="pref_default_height">180</string>
+    <string name="pref_title_sex">Sex</string>
+
+    <string-array name="pref_sex_list_titles">
+        <item>Male</item>
+        <item>Female</item>
+    </string-array>
+    <string-array name="pref_sex_list_values">
+        <item>Male</item>
+        <item>Female</item>
+    </string-array>
+
+</resources>
