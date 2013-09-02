@@ -34,7 +34,7 @@ import android.view.MenuItem;
  * API Guide</a> for more information on developing a Settings UI.
  */
 public class SettingsActivity extends PreferenceActivity
-	implements OnSharedPreferenceChangeListener{
+	{
     /**
      * Determines whether to always show the simplified settings UI, where
      * settings are presented in a single list. When false, settings are shown
@@ -60,7 +60,10 @@ public class SettingsActivity extends PreferenceActivity
             actionBar.setDisplayHomeAsUpEnabled(true); // show back arrow on title icon
             actionBar.setDisplayShowHomeEnabled(true);
         }
+        
+        
     }
+    
 
     /**
      * Shows the simplified settings UI if the device configuration if the
@@ -194,18 +197,5 @@ public class SettingsActivity extends PreferenceActivity
         return super.onKeyDown(keycode, e);
     }
 
-	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
-			String key) {
-		// TODO Auto-generated method stub
-		Editor editor = sharedPreferences.edit();
-		if(key.equalsIgnoreCase("height_value")) {
-			MainActivity.height = sharedPreferences.getInt(key, 180);
-		} else if (key.equalsIgnoreCase("sex_value")) {
-			MainActivity.currentSex = sharedPreferences.getString(key, "Male");
-			editor.putString("sex", MainActivity.currentSex);
-		}
-		editor.commit();
-		Log.i("PrefsActivity", "Sex: "+MainActivity.currentSex);
-		
-	} 
+
 }

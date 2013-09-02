@@ -1,10 +1,16 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/ist"
     android:orientation="vertical"
     tools:context=".MainActivity" >
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ist_level_3" />
 
     <TextView
         android:id="@+id/textViewYaw"
@@ -75,5 +81,19 @@
         android:layout_height="wrap_content"
         android:background="#ffffff"
         android:text="Zaccel: " />
+
+    <TextView
+        android:id="@+id/textViewAccelVector"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="#ffffff"
+        android:text="Accel vector: " />
+
+    <TextView
+        android:id="@+id/textViewStepsTaken"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="#ffffff"
+        android:text="Steps taken: " />
 
 </LinearLayout>

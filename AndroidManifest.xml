@@ -20,7 +20,7 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>      
+        </activity>
         <activity
             android:name="com.jonathanmackenzie.indoortracking.SettingsActivity"
             android:label="@string/title_activity_settings" >
@@ -28,6 +28,14 @@
         <activity
             android:name="com.jonathanmackenzie.indoortracking.HelpActivity"
             android:label="@string/title_activity_help"
+            android:parentActivityName="com.jonathanmackenzie.indoortracking.MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.jonathanmackenzie.indoortracking.MainActivity" />
+        </activity>
+        <activity
+            android:name="com.jonathanmackenzie.indoortracking.GraphActivity"
+            android:label="@string/title_activity_graph"
             android:parentActivityName="com.jonathanmackenzie.indoortracking.MainActivity" >
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
