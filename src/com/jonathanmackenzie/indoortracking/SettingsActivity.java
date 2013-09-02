@@ -1,14 +1,16 @@
 package com.jonathanmackenzie.indoortracking;
 
+import java.util.Currency;
 import java.util.List;
 
 import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.res.Configuration;
-import android.content.res.Resources;
-import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.Preference;
@@ -16,10 +18,9 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
-import android.support.v4.app.NavUtils;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MenuItem;
-import android.widget.TextView;
 
 /**
  * A {@link PreferenceActivity} that presents a set of application settings. On
@@ -32,7 +33,8 @@ import android.widget.TextView;
  * href="http://developer.android.com/guide/topics/ui/settings.html">Settings
  * API Guide</a> for more information on developing a Settings UI.
  */
-public class SettingsActivity extends PreferenceActivity {
+public class SettingsActivity extends PreferenceActivity
+	implements OnSharedPreferenceChangeListener{
     /**
      * Determines whether to always show the simplified settings UI, where
      * settings are presented in a single list. When false, settings are shown
@@ -71,19 +73,14 @@ public class SettingsActivity extends PreferenceActivity {
             return;
         }
 
-        // In the simplified UI, fragments are not used at all and we instead
-        // use the older PreferenceActivity APIs.
-
         // Add 'general' preferences.
         PreferenceCategory fakeHeader = new PreferenceCategory(this);
         fakeHeader.setTitle(R.string.pref_header_general);
         addPreferencesFromResource(R.xml.pref_general);
 
-        // Bind the summaries of EditText/List/Dialog/Ringtone preferences to
-        // their values. When their values change, their summaries are updated
-        // to reflect the new value, per the Android Design guidelines.
+        
         bindPreferenceSummaryToValue(findPreference("height_value"));
-        bindPreferenceSummaryToValue(findPreference("sex_list"));
+        bindPreferenceSummaryToValue(findPreference("sex_value"));
     }
 
     /** {@inheritDoc} */
@@ -127,7 +124,7 @@ public class SettingsActivity extends PreferenceActivity {
      * to reflect its new value.
      */
     private static Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener = new Preference.OnPreferenceChangeListener() {
-        @Override
+ 
         public boolean onPreferenceChange(Preference preference, Object value) {
             String stringValue = value.toString();
 
@@ -169,11 +166,7 @@ public class SettingsActivity extends PreferenceActivity {
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             addPreferencesFromResource(R.xml.pref_general);
-
-            // Bind the summaries of EditText/List/Dialog/Ringtone preferences
-            // to their values. When their values change, their summaries are
-            // updated to reflect the new value, per the Android Design
-            // guidelines.
+          //  setContentView(R.xml.preferences_layout);
             bindPreferenceSummaryToValue(findPreference("height_value"));
             bindPreferenceSummaryToValue(findPreference("sex_list"));
         }
@@ -186,7 +179,6 @@ public class SettingsActivity extends PreferenceActivity {
             int SUCCESS_RESULT=1;
             setResult(SUCCESS_RESULT, new Intent());
             finish();
-           // NavUtils.navigateUpFromSameTask(this);
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -200,5 +192,20 @@ public class SettingsActivity extends PreferenceActivity {
             return true;
           }
         return super.onKeyDown(keycode, e);
-    } 
+    }
+
+	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
+			String key) {
+		// TODO Auto-generated method stub
+		Editor editor = sharedPreferences.edit();
+		if(key.equalsIgnoreCase("height_value")) {
+			MainActivity.height = sharedPreferences.getInt(key, 180);
+		} else if (key.equalsIgnoreCase("sex_value")) {
+			MainActivity.currentSex = sharedPreferences.getString(key, "Male");
+			editor.putString("sex", MainActivity.currentSex);
+		}
+		editor.commit();
+		Log.i("PrefsActivity", "Sex: "+MainActivity.currentSex);
+		
+	} 
 }

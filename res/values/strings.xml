@@ -24,5 +24,7 @@
     <string name="yaw">Yaw</string>
     <string name="pitch">Pitch</string>
     <string name="roll">Roll</string>
-
+    <string name="sex">Sex</string>
+    <string name="height">Height</string>
+	
 </resources>
