@@ -83,7 +83,9 @@ public class MainActivity extends Activity implements SensorEventListener,
             currentSex = prefs.getString("sex_value", "Male");
             ((TextView) findViewById(R.id.textViewSex)).setText("Sex: "
                     + currentSex);
-
+            float genFactor = (currentSex.equals("Female")) ? 0.413f : 0.415f;
+            float stepDist = genFactor * height;
+            ((TextView) findViewById(R.id.textViewStepDist)).setText("Step dist: "+stepDist);
            
         } catch (Exception e) {
             // TODO: handle exception
@@ -123,6 +125,7 @@ public class MainActivity extends Activity implements SensorEventListener,
            break;
         }
         if(i!=Object.class) {
+            Log.i("Action bar", "Starting "+i);
             startActivity(new Intent(this,i));
             return true;
         } else
@@ -147,9 +150,6 @@ public class MainActivity extends Activity implements SensorEventListener,
                 float genFactor = (currentSex.equals("Female")) ? 0.413f
                         : 0.415f;
                 float stepDist = genFactor * height;
-                Vector<Float> stepVector = new Vector<Float>();
-                x += yaw;
-                y += yaw;
                 // accelerations
                 double xa = event.values[0], ya = event.values[1], za = event.values[2];
                 ((TextView) findViewById(R.id.textViewXAccel))
@@ -163,7 +163,13 @@ public class MainActivity extends Activity implements SensorEventListener,
                 ((TextView) findViewById(R.id.textViewAccelVector))
                         .setText("accel vector: " + accelVector);
                 accelReadings.add(accelVector);
-                // If we take a step update the log
+                // If we take a step update the numbers
+                float accelThreshold = 5;
+                /*
+                
+                x += Math.cos(yaw) * stepDist;
+                y += Math.sin(yaw) * stepDist;
+                */
                 ((TextView) findViewById(R.id.textViewX)).setText("X: " + x);
                 ((TextView) findViewById(R.id.textViewY)).setText("Y: " + y);
             } else if (event.sensor == mMagnetometer) {
@@ -176,9 +182,9 @@ public class MainActivity extends Activity implements SensorEventListener,
                         mLastMagnetometer);
                 SensorManager.getOrientation(mR, mOrientation);
                 float rad_deg = 57.2957795f;
-                yaw = mOrientation[0] * rad_deg; // radians to degrees
-                pitch = mOrientation[1] * rad_deg;
-                roll = mOrientation[2] * rad_deg;
+                yaw = mOrientation[0] ;//* rad_deg; // radians to degrees
+                pitch = mOrientation[1];// * rad_deg;
+                roll = mOrientation[2] ;//* rad_deg;
                 TextView tvYaw = (TextView) findViewById(R.id.textViewYaw);
                 TextView tvRoll = (TextView) findViewById(R.id.textViewRoll);
                 TextView tvPitch = (TextView) findViewById(R.id.textViewPitch);

@@ -46,6 +46,14 @@
         android:layout_height="wrap_content"
         android:background="#ffffff"
         android:text="@string/sex" />
+    
+        <TextView
+        android:id="@+id/textViewStepDist"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="#ffffff"
+        android:text="StepDist: " />
+    
 
     <TextView
         android:id="@+id/textViewX"
