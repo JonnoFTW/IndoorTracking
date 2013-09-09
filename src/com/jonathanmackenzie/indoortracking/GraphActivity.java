@@ -96,6 +96,7 @@ public class GraphActivity extends Activity implements SensorEventListener {
     private SimpleXYSeries medianAccelHistorySeries = null;
     private LinkedList<Double> lastAccels;
     private int stepsTaken = 0;
+    private double g=0;
     private static final int WINDOW_SIZE = 3;
 
     /** Called when the activity is first created. */
@@ -140,8 +141,8 @@ public class GraphActivity extends Activity implements SensorEventListener {
         aprHistoryPlot
                 .addSeries(medianAccelHistorySeries, new LineAndPointFormatter(
                         Color.WHITE, Color.BLACK, null, null));
-        aprHistoryPlot.setDomainStepValue(5);
-        aprHistoryPlot.setTicksPerRangeLabel(2);
+        aprHistoryPlot.setDomainStepValue(2);
+        aprHistoryPlot.setTicksPerRangeLabel(1);
         aprHistoryPlot.setDomainLabel("Sample Index");
         aprHistoryPlot.getDomainLabelWidget().pack();
         aprHistoryPlot.setRangeLabel("Accel (m/s/s)");
@@ -199,9 +200,13 @@ public class GraphActivity extends Activity implements SensorEventListener {
         Collections.sort(medianList);
         
         // Get the median values
-        medianAccelHistorySeries.addLast(null, medianList.get(medianList.size()/2));
+        double median = medianList.get(medianList.size()/2);
+        g = 0.9*g + 0.1*median;
+        double v = vectorAccel - g;
+        medianAccelHistorySeries.addLast(null, v);
        
-        ((TextView)findViewById(R.id.medianVector)).setText("Median: "+(medianList.get(medianList.size()/2)));
+        ((TextView)findViewById(R.id.medianVector)).setText("Median: "+median);
+        ((TextView)findViewById(R.id.medianLowPassVector)).setText("Filtered Median: "+v);
         if(lastAccels.getLast()-lastAccels.getFirst() <= 0.5 && lastAccels.get(lastAccels.size()/2) > 1.8) {
             ((TextView)findViewById(R.id.stepsTaken)).setText("Steps: "+(stepsTaken++));
         }
