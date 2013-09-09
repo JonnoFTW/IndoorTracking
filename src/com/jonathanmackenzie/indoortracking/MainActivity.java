@@ -1,7 +1,6 @@
 package com.jonathanmackenzie.indoortracking;
 
 import java.util.List;
-import java.util.Vector;
 
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 
@@ -29,7 +28,7 @@ public class MainActivity extends Activity implements SensorEventListener,
 
     static public String currentSex = "Male";
     static public int height = 180;
-    private float yaw = 0, pitch = 0, roll = 0, x = 0, y = 0;
+    private float yaw = 0, pitch = 0, roll = 0, x = 0, y = 0,stepDist = 0;
     private SensorManager mSensorManager;
     private Sensor mMagnetometer;
     private Sensor mAccelerometer;
@@ -49,11 +48,11 @@ public class MainActivity extends Activity implements SensorEventListener,
     public void onCreate(Bundle savedInstanceState) {
         prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
+        setContentView(R.layout.activity_main);
 
         prefs.registerOnSharedPreferenceChangeListener(this);
-        updateSettings();
+       
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
         updateSettings();
         getActionBar().show();
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -61,6 +60,7 @@ public class MainActivity extends Activity implements SensorEventListener,
                 .getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         mMagnetometer = mSensorManager
                 .getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+        updateSettings();
         findViewById(R.id.mainView).setOnTouchListener(new OnTouchListener() {
             
             public boolean onTouch(View v, MotionEvent event) {
@@ -78,21 +78,23 @@ public class MainActivity extends Activity implements SensorEventListener,
     private void updateSettings() {
         try {
             height = Integer.valueOf(prefs.getString("height_value", "0"));
-            ((TextView) findViewById(R.id.textViewHeight)).setText("Height: "
-                    + height);
             currentSex = prefs.getString("sex_value", "Male");
-            ((TextView) findViewById(R.id.textViewSex)).setText("Sex: "
-                    + currentSex);
-            float genFactor = (currentSex.equals("Female")) ? 0.413f : 0.415f;
-            float stepDist = genFactor * height;
-            ((TextView) findViewById(R.id.textViewStepDist)).setText("Step dist: "+stepDist);
-           
         } catch (Exception e) {
             // TODO: handle exception
             Log.e("Settings", e.toString());
+        } finally {
+        	((TextView) findViewById(R.id.textViewHeight)).setText("Height: "
+                    + height);
+        	 ((TextView) findViewById(R.id.textViewSex)).setText("Sex: "
+                     + currentSex);
+            
+             stepDist = getSexFactor() * height;
+             ((TextView) findViewById(R.id.textViewStepDist)).setText("Step dist: "+stepDist);
         }
     }
-
+    private float getSexFactor() {
+    	 return  (currentSex.equals("Female")) ? 0.413f : 0.415f;
+    }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_activity_actions, menu);
@@ -116,7 +118,7 @@ public class MainActivity extends Activity implements SensorEventListener,
             i = SettingsActivity.class;
             break;
         case R.id.action_help: 
-            i = SettingsActivity.class;
+            i = HelpActivity.class;
             break;
         case R.id.action_graph:
             i = GraphActivity.class;

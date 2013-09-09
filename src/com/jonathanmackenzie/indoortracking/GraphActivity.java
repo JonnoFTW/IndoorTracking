@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 AndroidPlot.com
+ * Copyright 2012 AndroidPlot.com
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -12,287 +12,204 @@
  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
- *    
- *    Taken from: https://bitbucket.org/androidplot/androidplot/src/b2049f098412f756e9a6717c0dc62dac8260aaca/Examples/DemoApp/src/com/androidplot/demos/DynamicXYPlotActivity.java?at=master
  */
 
 package com.jonathanmackenzie.indoortracking;
 
-import java.text.DecimalFormat;
-import java.util.Observable;
-import java.util.Observer;
+import java.text.FieldPosition;
+import java.text.Format;
+import java.text.ParsePosition;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+
+import org.apache.commons.collections4.list.FixedSizeList;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
-import android.support.v4.app.NavUtils;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.TextView;
 
-import com.androidplot.Plot;
+import com.androidplot.util.PlotStatistics;
 import com.androidplot.xy.BoundaryMode;
 import com.androidplot.xy.LineAndPointFormatter;
-import com.androidplot.xy.PointLabelFormatter;
+import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.xy.XYPlot;
-import com.androidplot.xy.XYSeries;
-import com.androidplot.xy.XYStepMode;
 
+// Monitor the phone's orientation sensor and plot the resulting azimuth pitch and roll values.
+// See: http://developer.android.com/reference/android/hardware/SensorEvent.html
 public class GraphActivity extends Activity implements SensorEventListener {
 
-    // redraws a plot whenever an update is received:
-    private class MyPlotUpdater implements Observer {
-        Plot plot;
+    /**
+     * A simple formatter to convert bar indexes into sensor names.
+     */
+    private class APRIndexFormat extends Format {
+        @Override
+        public StringBuffer format(Object obj, StringBuffer toAppendTo,
+                FieldPosition pos) {
+            Number num = (Number) obj;
 
-        public MyPlotUpdater(Plot plot) {
-            this.plot = plot;
+            // using num.intValue() will floor the value, so we add 0.5 to round
+            // instead:
+            int roundNum = (int) (num.floatValue() + 0.5f);
+            switch (roundNum) {
+            case 0:
+                toAppendTo.append("Azimuth");
+                break;
+            case 1:
+                toAppendTo.append("Pitch");
+                break;
+            case 2:
+                toAppendTo.append("Roll");
+                break;
+            default:
+                toAppendTo.append("Unknown");
+            }
+            return toAppendTo;
         }
 
-        public void update(Observable o, Object arg) {
-            plot.redraw();
+        @Override
+        public Object parseObject(String source, ParsePosition pos) {
+            return null; // We don't use this so just return null for now.
         }
     }
 
-    private XYPlot dynamicPlot;
-    private XYPlot staticPlot;
-    private MyPlotUpdater plotUpdater;
-    SampleDynamicXYDatasource data;
-    private Thread myThread;
-    private SensorManager mSensorManager;
-    private Object mAccelerometer;
+    private static final int HISTORY_SIZE = 100; // number of points to plot in
+                                                 // history
+    private SensorManager sensorMgr = null;
+    private Sensor orSensor = null;
 
+    private XYPlot aprHistoryPlot = null;
+
+    private SimpleXYSeries aprLevelsSeries = null;
+    private SimpleXYSeries vectorAccelHistorySeries = null;
+    private SimpleXYSeries medianAccelHistorySeries = null;
+    private LinkedList<Double> lastAccels;
+    private int stepsTaken = 0;
+    private static final int WINDOW_SIZE = 3;
+
+    /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
-
-        // android boilerplate stuff
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_graph);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        // setup the APR Levels plot:
 
-        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        mAccelerometer = mSensorManager
-                .getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        lastAccels = new LinkedList<Double>();
+        aprLevelsSeries = new SimpleXYSeries("APR Levels");
+        aprLevelsSeries.useImplicitXVals();
+
+        // setup the APR History plot:
+        aprHistoryPlot = (XYPlot) findViewById(R.id.accelHistoryPlot);
+
+        vectorAccelHistorySeries = new SimpleXYSeries("Vector");
+        vectorAccelHistorySeries.useImplicitXVals();
+
+        medianAccelHistorySeries = new SimpleXYSeries("Median Filtered");
+        medianAccelHistorySeries.useImplicitXVals();
+
+        aprHistoryPlot.setRangeBoundaries(-10, 10, BoundaryMode.FIXED);
+        aprHistoryPlot.setDomainStepValue(2);
+
+        aprHistoryPlot.setDomainBoundaries(0, HISTORY_SIZE, BoundaryMode.FIXED);
+
+        /*
+         * aprHistoryPlot.addSeries(xAccelHistorySeries, new
+         * LineAndPointFormatter(Color.rgb(100, 100, 200), Color.BLACK, null,
+         * null)); aprHistoryPlot.addSeries(yAccelHistorySeries, new
+         * LineAndPointFormatter(Color.rgb(100, 200, 100), Color.BLACK, null,
+         * null)); aprHistoryPlot.addSeries(zAccelHistorySeries, new
+         * LineAndPointFormatter(Color.rgb(200, 100, 100), Color.BLACK, null,
+         * null)); aprHistoryPlot .addSeries(zAccelHistorySeries, new
+         * LineAndPointFormatter( Color.YELLOW, Color.BLACK, null, null));
+         */
+        aprHistoryPlot.addSeries(vectorAccelHistorySeries,
+                new LineAndPointFormatter(Color.MAGENTA, Color.BLACK, null,
+                        null));
+        aprHistoryPlot
+                .addSeries(medianAccelHistorySeries, new LineAndPointFormatter(
+                        Color.WHITE, Color.BLACK, null, null));
+        aprHistoryPlot.setDomainStepValue(5);
+        aprHistoryPlot.setTicksPerRangeLabel(2);
+        aprHistoryPlot.setDomainLabel("Sample Index");
+        aprHistoryPlot.getDomainLabelWidget().pack();
+        aprHistoryPlot.setRangeLabel("Accel (m/s/s)");
+        aprHistoryPlot.getRangeLabelWidget().pack();
+
+        // register for orientation sensor events:
+        sensorMgr = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        orSensor = sensorMgr.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        // if we can't access the orientation sensor then exit:
+        if (orSensor == null) {
+            System.out.println("Failed to attach to orSensor.");
+            cleanup();
+        }
+
+        sensorMgr.registerListener(this, orSensor,
+                SensorManager.SENSOR_DELAY_UI);
+
+    }
+
+    private void cleanup() {
+        // aunregister with the orientation sensor before exiting:
+        sensorMgr.unregisterListener(this);
+        finish();
+    }
+
+    // Called whenever a new orSensor reading is taken.
+    public synchronized void onSensorChanged(SensorEvent sensorEvent) {
+
+        // update instantaneous data:
+        Number[] series1Numbers = { sensorEvent.values[0],
+                sensorEvent.values[1], sensorEvent.values[2] };
+        aprLevelsSeries.setModel(Arrays.asList(series1Numbers),
+                SimpleXYSeries.ArrayFormat.Y_VALS_ONLY);
+
+        // get rid the oldest sample in history:
+        if (vectorAccelHistorySeries.size() > HISTORY_SIZE) {
+            vectorAccelHistorySeries.removeFirst();
+            medianAccelHistorySeries.removeFirst();
+        }
+
+        // add the latest history sample:
+        double vectorAccel = Math.sqrt(sensorEvent.values[0]
+                * sensorEvent.values[0] + sensorEvent.values[1]
+                * sensorEvent.values[1] + sensorEvent.values[2]
+                * sensorEvent.values[2]) -9.81;
+        vectorAccelHistorySeries.addLast(null, vectorAccel);
+       // Median holds the median of the last 3 vectorAccels
+       
         
-        // get handles to our View defined in layout.xml:
-        dynamicPlot = (XYPlot) findViewById(R.id.accelPlot);
-
-        plotUpdater = new MyPlotUpdater(dynamicPlot);
-
-        // only display whole numbers in domain labels
-        dynamicPlot.getGraphWidget().setDomainValueFormat(
-                new DecimalFormat("0"));
-
-        // getInstance and position datasets:
-        data = new SampleDynamicXYDatasource();
-        SampleDynamicSeries sine1Series = new SampleDynamicSeries(data, 0,
-                "Sine 1");
-
-        dynamicPlot.addSeries(
-                sine1Series,
-                new LineAndPointFormatter(Color.rgb(0, 0, 0), null, Color.rgb(
-                        0, 80, 0),null));
-
-        // create a series using a formatter with some transparency applied:
-        LineAndPointFormatter f1 = new LineAndPointFormatter(Color.rgb(0, 0,
-                200), null, Color.rgb(0, 0, 80), (PointLabelFormatter) null);
-
-        f1.getFillPaint().setAlpha(220);
-
-        // hook up the plotUpdater to the data model:
-        data.addObserver(plotUpdater);
-
-        dynamicPlot.setDomainStepMode(XYStepMode.SUBDIVIDE);
-        dynamicPlot.setDomainStepValue(sine1Series.size());
-
-        // thin out domain/range tick labels so they dont overlap each other:
-        dynamicPlot.setTicksPerDomainLabel(5);
-        dynamicPlot.setTicksPerRangeLabel(3);
-
-        // uncomment this line to freeze the range boundaries:
-        dynamicPlot.setRangeBoundaries(-100, 100, BoundaryMode.FIXED);
-    }
-
-    /**
-     * Set up the {@link android.app.ActionBar}.
-     */
-    private void setupActionBar() {
-
-        getActionBar().setDisplayHomeAsUpEnabled(true);
-
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.help, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-        case android.R.id.home:
-            // This ID represents the Home or Up button. In the case of this
-            // activity, the Up button is shown. Use NavUtils to allow users
-            // to navigate up one level in the application structure. For
-            // more details, see the Navigation pattern on Android Design:
-            //
-            // http://developer.android.com/design/patterns/navigation.html#up-vs-back
-            //
-            NavUtils.navigateUpFromSameTask(this);
-            return true;
+        lastAccels.addLast(vectorAccel);
+        while(lastAccels.size() > WINDOW_SIZE) {
+            lastAccels.removeFirst();
         }
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void onResume() {
-        // kick off the data generating thread:
-        myThread = new Thread(data);
-        myThread.start();
-        super.onResume();
-    }
-
-    @Override
-    public void onPause() {
-        data.stopThread();
-        super.onPause();
-    }
-
-    class SampleDynamicXYDatasource implements Runnable {
-
-        // encapsulates management of the observers watching this datasource for
-        // update events:
-        class MyObservable extends Observable {
-            @Override
-            public void notifyObservers() {
-                setChanged();
-                super.notifyObservers();
-            }
-        }
-
-        private static final int MAX_AMP_SEED = 100;
-        private static final int MIN_AMP_SEED = 10;
-        private static final int AMP_STEP = 5;
-        public static final int SINE1 = 0;
-        public static final int SINE2 = 1;
-        private static final int SAMPLE_SIZE = 30;
-        private int phase = 0;
-        private int sinAmp = 20;
-        private MyObservable notifier;
-        private boolean keepRunning = false;
-
-        {
-            notifier = new MyObservable();
-        }
-
-        public void stopThread() {
-            keepRunning = false;
-        }
-
-        // @Override
-        public void run() {
-            try {
-                keepRunning = true;
-                boolean isRising = true;
-                while (keepRunning) {
-
-                    Thread.sleep(50); // decrease or remove to speed up the
-                                      // refresh rate.
-                    phase++;
-                    if (sinAmp >= MAX_AMP_SEED) {
-                        isRising = false;
-                    } else if (sinAmp <= MIN_AMP_SEED) {
-                        isRising = true;
-                    }
-
-                    if (isRising) {
-                        sinAmp += AMP_STEP;
-                    } else {
-                        sinAmp -= AMP_STEP;
-                    }
-                    notifier.notifyObservers();
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        public int getItemCount(int series) {
-            return 30;
-        }
-
-        public Number getX(int series, int index) {
-            if (index >= SAMPLE_SIZE) {
-                throw new IllegalArgumentException();
-            }
-            return index;
-        }
-
-        public Number getY(int series, int index) {
-            if (index >= SAMPLE_SIZE) {
-                throw new IllegalArgumentException();
-            }
-            double amp = sinAmp * Math.sin(index + phase + 4);
-            switch (series) {
-            case SINE1:
-                return amp;
-            case SINE2:
-                return -amp;
-            default:
-                throw new IllegalArgumentException();
-            }
-        }
-
-        public void addObserver(Observer observer) {
-            notifier.addObserver(observer);
-        }
-
-        public void removeObserver(Observer observer) {
-            notifier.deleteObserver(observer);
-        }
-
-    }
-
-    class SampleDynamicSeries implements XYSeries {
-        private SampleDynamicXYDatasource datasource;
-        private int seriesIndex;
-        private String title;
-
-        public SampleDynamicSeries(SampleDynamicXYDatasource datasource,
-                int seriesIndex, String title) {
-            this.datasource = datasource;
-            this.seriesIndex = seriesIndex;
-            this.title = title;
-        }
-
-        public String getTitle() {
-            return title;
-        }
-
-        public int size() {
-            return datasource.getItemCount(seriesIndex);
-        }
-
-        public Number getX(int index) {
-            return datasource.getX(seriesIndex, index);
-        }
-
-        public Number getY(int index) {
-            return datasource.getY(seriesIndex, index);
-        }
-    }
-
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        // TODO Auto-generated method stub
+        LinkedList<Double> medianList = new LinkedList<Double>(lastAccels);
+        Collections.sort(medianList);
         
+        // Get the median values
+        medianAccelHistorySeries.addLast(null, medianList.get(medianList.size()/2));
+       
+        ((TextView)findViewById(R.id.medianVector)).setText("Median: "+(medianList.get(medianList.size()/2)));
+        if(lastAccels.getLast()-lastAccels.getFirst() <= 0.5 && lastAccels.get(lastAccels.size()/2) > 1.8) {
+            ((TextView)findViewById(R.id.stepsTaken)).setText("Steps: "+(stepsTaken++));
+        }
+        // redraw the Plots:
+        aprHistoryPlot.redraw();
     }
 
-    public void onSensorChanged(SensorEvent event) {
-        // TODO Auto-generated method stub
-        
+    public void onAccuracyChanged(Sensor sensor, int i) {
+        // Not interested in this event
     }
 }
