@@ -16,16 +16,13 @@
 
 package com.jonathanmackenzie.indoortracking;
 
+import java.text.DecimalFormat;
 import java.text.FieldPosition;
 import java.text.Format;
 import java.text.ParsePosition;
-import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
-import java.util.List;
-
-import org.apache.commons.collections4.list.FixedSizeList;
 
 import android.app.Activity;
 import android.content.Context;
@@ -36,11 +33,13 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
-import com.androidplot.util.PlotStatistics;
 import com.androidplot.xy.BoundaryMode;
 import com.androidplot.xy.LineAndPointFormatter;
 import com.androidplot.xy.SimpleXYSeries;
@@ -49,41 +48,6 @@ import com.androidplot.xy.XYPlot;
 // Monitor the phone's orientation sensor and plot the resulting azimuth pitch and roll values.
 // See: http://developer.android.com/reference/android/hardware/SensorEvent.html
 public class GraphActivity extends Activity implements SensorEventListener {
-
-    /**
-     * A simple formatter to convert bar indexes into sensor names.
-     */
-    private class APRIndexFormat extends Format {
-        @Override
-        public StringBuffer format(Object obj, StringBuffer toAppendTo,
-                FieldPosition pos) {
-            Number num = (Number) obj;
-
-            // using num.intValue() will floor the value, so we add 0.5 to round
-            // instead:
-            int roundNum = (int) (num.floatValue() + 0.5f);
-            switch (roundNum) {
-            case 0:
-                toAppendTo.append("Azimuth");
-                break;
-            case 1:
-                toAppendTo.append("Pitch");
-                break;
-            case 2:
-                toAppendTo.append("Roll");
-                break;
-            default:
-                toAppendTo.append("Unknown");
-            }
-            return toAppendTo;
-        }
-
-        @Override
-        public Object parseObject(String source, ParsePosition pos) {
-            return null; // We don't use this so just return null for now.
-        }
-    }
-
     private static final int HISTORY_SIZE = 100; // number of points to plot in
                                                  // history
     private SensorManager sensorMgr = null;
@@ -91,13 +55,13 @@ public class GraphActivity extends Activity implements SensorEventListener {
 
     private XYPlot aprHistoryPlot = null;
 
-    private SimpleXYSeries aprLevelsSeries = null;
     private SimpleXYSeries vectorAccelHistorySeries = null;
     private SimpleXYSeries medianAccelHistorySeries = null;
-    private LinkedList<Double> lastAccels;
-    private int stepsTaken = 0;
-    private double g=0;
-    private static final int WINDOW_SIZE = 3;
+    private SimpleXYSeries meanAccelHistorySeries = null;
+    private LinkedList<Double> lastAccels, medianAccels, meanAccels;
+    private int stepsTaken = 0,meanSteps = 0;
+    private double g = 9.81;
+    private static int WINDOW_SIZE = 3;
 
     /** Called when the activity is first created. */
     @Override
@@ -108,8 +72,8 @@ public class GraphActivity extends Activity implements SensorEventListener {
         // setup the APR Levels plot:
 
         lastAccels = new LinkedList<Double>();
-        aprLevelsSeries = new SimpleXYSeries("APR Levels");
-        aprLevelsSeries.useImplicitXVals();
+        medianAccels = new LinkedList<Double>();
+        meanAccels = new LinkedList<Double>();
 
         // setup the APR History plot:
         aprHistoryPlot = (XYPlot) findViewById(R.id.accelHistoryPlot);
@@ -119,34 +83,32 @@ public class GraphActivity extends Activity implements SensorEventListener {
 
         medianAccelHistorySeries = new SimpleXYSeries("Median Filtered");
         medianAccelHistorySeries.useImplicitXVals();
+        
+        meanAccelHistorySeries = new SimpleXYSeries("Mean Filtered");
+        meanAccelHistorySeries.useImplicitXVals();
 
         aprHistoryPlot.setRangeBoundaries(-10, 10, BoundaryMode.FIXED);
         aprHistoryPlot.setDomainStepValue(2);
 
         aprHistoryPlot.setDomainBoundaries(0, HISTORY_SIZE, BoundaryMode.FIXED);
 
-        /*
-         * aprHistoryPlot.addSeries(xAccelHistorySeries, new
-         * LineAndPointFormatter(Color.rgb(100, 100, 200), Color.BLACK, null,
-         * null)); aprHistoryPlot.addSeries(yAccelHistorySeries, new
-         * LineAndPointFormatter(Color.rgb(100, 200, 100), Color.BLACK, null,
-         * null)); aprHistoryPlot.addSeries(zAccelHistorySeries, new
-         * LineAndPointFormatter(Color.rgb(200, 100, 100), Color.BLACK, null,
-         * null)); aprHistoryPlot .addSeries(zAccelHistorySeries, new
-         * LineAndPointFormatter( Color.YELLOW, Color.BLACK, null, null));
-         */
         aprHistoryPlot.addSeries(vectorAccelHistorySeries,
                 new LineAndPointFormatter(Color.MAGENTA, Color.BLACK, null,
                         null));
         aprHistoryPlot
                 .addSeries(medianAccelHistorySeries, new LineAndPointFormatter(
                         Color.WHITE, Color.BLACK, null, null));
+        
+        aprHistoryPlot.addSeries(meanAccelHistorySeries, new LineAndPointFormatter(Color.BLUE,Color.BLACK,null,null));
+        
         aprHistoryPlot.setDomainStepValue(2);
         aprHistoryPlot.setTicksPerRangeLabel(1);
         aprHistoryPlot.setDomainLabel("Sample Index");
         aprHistoryPlot.getDomainLabelWidget().pack();
         aprHistoryPlot.setRangeLabel("Accel (m/s/s)");
         aprHistoryPlot.getRangeLabelWidget().pack();
+        
+   //     aprHistoryPlot.centerOnRangeOrigin(0);
 
         // register for orientation sensor events:
         sensorMgr = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -160,8 +122,33 @@ public class GraphActivity extends Activity implements SensorEventListener {
         sensorMgr.registerListener(this, orSensor,
                 SensorManager.SENSOR_DELAY_UI);
 
+        Button bp = (Button) findViewById(R.id.buttonPlusWindow);
+        Button bm = (Button) findViewById(R.id.buttonMinusWindow);
+        
+        bm.setOnClickListener(new View.OnClickListener() {
+            
+            public void onClick(View v) {
+                WINDOW_SIZE--;
+                updateWindowSize();
+            }
+        });
+        bp.setOnClickListener(new View.OnClickListener() {
+            
+            public void onClick(View v) {
+                WINDOW_SIZE++;
+                updateWindowSize();
+            }
+        });
+        updateWindowSize();
+
     }
 
+    private void updateWindowSize() {
+        TextView tv =(TextView) findViewById(R.id.windowSizeInput);
+        if(WINDOW_SIZE < 1)
+            WINDOW_SIZE = 1;
+        tv.setText("Window size: "+WINDOW_SIZE);
+    }
     private void cleanup() {
         // aunregister with the orientation sensor before exiting:
         sensorMgr.unregisterListener(this);
@@ -170,45 +157,69 @@ public class GraphActivity extends Activity implements SensorEventListener {
 
     // Called whenever a new orSensor reading is taken.
     public synchronized void onSensorChanged(SensorEvent sensorEvent) {
-
-        // update instantaneous data:
-        Number[] series1Numbers = { sensorEvent.values[0],
-                sensorEvent.values[1], sensorEvent.values[2] };
-        aprLevelsSeries.setModel(Arrays.asList(series1Numbers),
-                SimpleXYSeries.ArrayFormat.Y_VALS_ONLY);
-
         // get rid the oldest sample in history:
         if (vectorAccelHistorySeries.size() > HISTORY_SIZE) {
             vectorAccelHistorySeries.removeFirst();
             medianAccelHistorySeries.removeFirst();
+            meanAccelHistorySeries.removeFirst();
         }
 
         // add the latest history sample:
         double vectorAccel = Math.sqrt(sensorEvent.values[0]
                 * sensorEvent.values[0] + sensorEvent.values[1]
                 * sensorEvent.values[1] + sensorEvent.values[2]
-                * sensorEvent.values[2]) -9.81;
-        vectorAccelHistorySeries.addLast(null, vectorAccel);
-       // Median holds the median of the last 3 vectorAccels
-       
-        
-        lastAccels.addLast(vectorAccel);
-        while(lastAccels.size() > WINDOW_SIZE) {
+                * sensorEvent.values[2]);
+
+        // Median holds the median of the last 3 vectorAccels
+        // Apply a low pass filter to remove gravity
+        g = 0.9 * g + 0.1 * vectorAccel;
+        double v = vectorAccel - g;
+        vectorAccelHistorySeries.addLast(null, v);
+        lastAccels.addLast(v);
+        while (lastAccels.size() > WINDOW_SIZE) {
             lastAccels.removeFirst();
         }
+        // Use an extra list to get the median value because we need to sort the
+        // data
         LinkedList<Double> medianList = new LinkedList<Double>(lastAccels);
         Collections.sort(medianList);
-        
-        // Get the median values
-        double median = medianList.get(medianList.size()/2);
-        g = 0.9*g + 0.1*median;
-        double v = vectorAccel - g;
-        medianAccelHistorySeries.addLast(null, v);
+
+        double sum= 0;
+        for (Double d : medianList) {
+            sum += d;
+        }
+        double mean = sum /medianList.size();
+        meanAccels.addLast(mean);
+        while (meanAccels.size() > WINDOW_SIZE) {
+            meanAccels.removeFirst();
+        }
        
-        ((TextView)findViewById(R.id.medianVector)).setText("Median: "+median);
-        ((TextView)findViewById(R.id.medianLowPassVector)).setText("Filtered Median: "+v);
-        if(lastAccels.getLast()-lastAccels.getFirst() <= 0.5 && lastAccels.get(lastAccels.size()/2) > 1.8) {
-            ((TextView)findViewById(R.id.stepsTaken)).setText("Steps: "+(stepsTaken++));
+        // Get the median value
+        double median = medianList.get(medianList.size()/2);
+        meanAccelHistorySeries.addLast(null, mean);
+        medianAccels.addLast(median);
+        while (medianAccels.size() > WINDOW_SIZE) {
+            medianAccels.removeFirst();
+        }
+        medianAccelHistorySeries.addLast(null, median);
+        DecimalFormat df = new DecimalFormat("##.##");
+       
+        ((TextView) findViewById(R.id.medianVector)).setText(" Median: "
+                +  df.format(median));
+        if (medianAccels.getLast() - medianAccels.getFirst() <= 0.5
+                && medianAccels.get(medianAccels.size() / 2) > 1.8) {
+            ((TextView) findViewById(R.id.stepsTaken)).setText(" Median Steps: "
+                    + (stepsTaken++));
+
+        }
+        
+        ((TextView) findViewById(R.id.meanVector)).setText(" Mean: "
+                +  df.format(mean));
+        if (meanAccels.getLast() - meanAccels.getFirst() <= 0.5
+                && meanAccels.get(meanAccels.size() / 2) > 1.3) {
+            ((TextView) findViewById(R.id.stepsTakenMean)).setText(" Mean Steps: "
+                    + (meanSteps++));
+
         }
         // redraw the Plots:
         aprHistoryPlot.redraw();

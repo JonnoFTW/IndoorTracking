@@ -17,24 +17,84 @@
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
+        android:gravity="fill_horizontal"
         android:orientation="horizontal" >
 
-        <TextView
-            android:id="@+id/stepsTaken"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Steps: " />
-        <TextView
-            android:id="@+id/medianVector"
+            android:orientation="vertical" >
+
+            <TextView
+                android:id="@+id/stepsTaken"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Steps: " />
+
+            <TextView
+                android:id="@+id/medianVector"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Median: " />
+
+            <TextView
+                android:id="@+id/medianThreshold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Median Threshold: " />
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Median: " />
-                <TextView
-            android:id="@+id/medianLowPassVector"
-            android:layout_width="wrap_content"
+            android:orientation="vertical" >
+
+            <TextView
+                android:id="@+id/stepsTakenMean"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Steps: " />
+
+            <TextView
+                android:id="@+id/meanVector"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mean: " />
+
+            <TextView
+                android:id="@+id/meanThreshold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mean Threshold: " />
+            
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:text="Filtered Median: " />
+            android:gravity="right"
+            android:orientation="horizontal" >
+
+            <TextView
+                android:id="@+id/windowSizeInput"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Window Size: " />
+
+            <Button
+                android:id="@+id/buttonMinusWindow"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="-" />
+
+            <Button
+                android:id="@+id/buttonPlusWindow"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+" />
+        </LinearLayout>
     </LinearLayout>
 
 </LinearLayout>
