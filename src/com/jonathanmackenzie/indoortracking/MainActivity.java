@@ -188,9 +188,11 @@ public class MainActivity extends Activity implements SensorEventListener,
                 pitch = mOrientation[1];// * rad_deg;
                 roll = mOrientation[2] ;//* rad_deg;
                 TextView tvYaw = (TextView) findViewById(R.id.textViewYaw);
+                TextView tvYawD = (TextView) findViewById(R.id.textViewYawDegrees);
                 TextView tvRoll = (TextView) findViewById(R.id.textViewRoll);
                 TextView tvPitch = (TextView) findViewById(R.id.textViewPitch);
                 tvYaw.setText("Yaw: " + yaw);
+                tvYawD.setText("YawDegrees: " + (yaw*180.0/Math.PI));
                 tvPitch.setText("Pitch: " + pitch);
                 tvRoll.setText("Roll: " + roll);
             }

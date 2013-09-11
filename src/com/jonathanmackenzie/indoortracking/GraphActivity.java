@@ -17,10 +17,6 @@
 package com.jonathanmackenzie.indoortracking;
 
 import java.text.DecimalFormat;
-import java.text.FieldPosition;
-import java.text.Format;
-import java.text.ParsePosition;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 
@@ -28,22 +24,28 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.TextView;
+import android.widget.ToggleButton;
 
 import com.androidplot.xy.BoundaryMode;
+import com.androidplot.xy.FillDirection;
 import com.androidplot.xy.LineAndPointFormatter;
+import com.androidplot.xy.LineAndPointRenderer;
+import com.androidplot.xy.PointLabelFormatter;
+import com.androidplot.xy.PointLabeler;
 import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.xy.XYPlot;
+import com.androidplot.xy.XYSeries;
 
 // Monitor the phone's orientation sensor and plot the resulting azimuth pitch and roll values.
 // See: http://developer.android.com/reference/android/hardware/SensorEvent.html
@@ -54,14 +56,18 @@ public class GraphActivity extends Activity implements SensorEventListener {
     private Sensor orSensor = null;
 
     private XYPlot aprHistoryPlot = null;
-
+    private DecimalFormat df = new DecimalFormat("##.##");
     private SimpleXYSeries vectorAccelHistorySeries = null;
     private SimpleXYSeries medianAccelHistorySeries = null;
     private SimpleXYSeries meanAccelHistorySeries = null;
+    private SimpleXYSeries stepHistorySeries = null;
     private LinkedList<Double> lastAccels, medianAccels, meanAccels;
-    private int stepsTaken = 0,meanSteps = 0;
+    private int stepsTaken = 0, meanSteps = 0;
     private double g = 9.81;
+    private double stepThreshold = 1.5;
     private static int WINDOW_SIZE = 3;
+    private boolean paused = false;
+    private boolean meanLabels = true;
 
     /** Called when the activity is first created. */
     @Override
@@ -83,13 +89,24 @@ public class GraphActivity extends Activity implements SensorEventListener {
 
         medianAccelHistorySeries = new SimpleXYSeries("Median Filtered");
         medianAccelHistorySeries.useImplicitXVals();
-        
+
         meanAccelHistorySeries = new SimpleXYSeries("Mean Filtered");
         meanAccelHistorySeries.useImplicitXVals();
 
-        aprHistoryPlot.setRangeBoundaries(-10, 10, BoundaryMode.FIXED);
-        aprHistoryPlot.setDomainStepValue(2);
+        stepHistorySeries = new SimpleXYSeries("Steps");
+        stepHistorySeries.useImplicitXVals();
 
+        LineAndPointFormatter lpf = new LineAndPointFormatter(null,
+                Color.YELLOW, Color.YELLOW,
+                new PointLabelFormatter(Color.WHITE));
+        lpf.setPointLabeler(new PointLabeler() {
+
+            public String getLabel(XYSeries s, int idx) {
+                // TODO Auto-generated method stub
+                return df.format(s.getY(idx));
+            }
+        });
+        lpf.getPointLabelFormatter().getTextPaint().setTextSize(25);
         aprHistoryPlot.setDomainBoundaries(0, HISTORY_SIZE, BoundaryMode.FIXED);
 
         aprHistoryPlot.addSeries(vectorAccelHistorySeries,
@@ -98,17 +115,21 @@ public class GraphActivity extends Activity implements SensorEventListener {
         aprHistoryPlot
                 .addSeries(medianAccelHistorySeries, new LineAndPointFormatter(
                         Color.WHITE, Color.BLACK, null, null));
-        
-        aprHistoryPlot.addSeries(meanAccelHistorySeries, new LineAndPointFormatter(Color.BLUE,Color.BLACK,null,null));
-        
-        aprHistoryPlot.setDomainStepValue(2);
+
+        aprHistoryPlot.addSeries(meanAccelHistorySeries,
+                new LineAndPointFormatter(Color.BLUE, Color.BLACK, null, null));
+        aprHistoryPlot.addSeries(stepHistorySeries, lpf);
+        aprHistoryPlot.setRangeBoundaries(-5, 5, BoundaryMode.FIXED);
+        aprHistoryPlot.setRangeStepValue(10);
+        aprHistoryPlot.setDomainStepValue(10);
         aprHistoryPlot.setTicksPerRangeLabel(1);
+        aprHistoryPlot.setTicksPerDomainLabel(5);
         aprHistoryPlot.setDomainLabel("Sample Index");
         aprHistoryPlot.getDomainLabelWidget().pack();
         aprHistoryPlot.setRangeLabel("Accel (m/s/s)");
         aprHistoryPlot.getRangeLabelWidget().pack();
-        
-   //     aprHistoryPlot.centerOnRangeOrigin(0);
+
+        // aprHistoryPlot.centerOnRangeOrigin(0);
 
         // register for orientation sensor events:
         sensorMgr = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -124,44 +145,116 @@ public class GraphActivity extends Activity implements SensorEventListener {
 
         Button bp = (Button) findViewById(R.id.buttonPlusWindow);
         Button bm = (Button) findViewById(R.id.buttonMinusWindow);
-        
+
         bm.setOnClickListener(new View.OnClickListener() {
-            
+
             public void onClick(View v) {
                 WINDOW_SIZE--;
                 updateWindowSize();
             }
         });
         bp.setOnClickListener(new View.OnClickListener() {
-            
+
             public void onClick(View v) {
                 WINDOW_SIZE++;
                 updateWindowSize();
             }
         });
-        updateWindowSize();
 
+        Button bpt = (Button) findViewById(R.id.buttonPlusThreshold);
+        Button bmt = (Button) findViewById(R.id.buttonMinusThreshold);
+
+        bmt.setOnClickListener(new View.OnClickListener() {
+
+            public void onClick(View v) {
+                stepThreshold -= 0.1;
+                updateStepThreshold();
+            }
+        });
+        bpt.setOnClickListener(new View.OnClickListener() {
+
+            public void onClick(View v) {
+                stepThreshold += 0.1;
+                updateStepThreshold();
+            }
+        });
+        updateWindowSize();
+        updateStepThreshold();
+
+        ((ToggleButton) findViewById(R.id.buttonPause))
+                .setOnCheckedChangeListener(new OnCheckedChangeListener() {
+
+                    public void onCheckedChanged(CompoundButton buttonView,
+                            boolean isChecked) {
+                        // TODO Auto-generated method stub
+                        paused = isChecked;
+                    }
+                });
+        ((ToggleButton) findViewById(R.id.toggleButtonMeanMedian))
+                .setOnCheckedChangeListener(new OnCheckedChangeListener() {
+
+                    public void onCheckedChanged(CompoundButton buttonView,
+                            boolean isChecked) {
+                        // TODO Auto-generated method stub
+                        meanLabels = isChecked;
+                    }
+                });
+
+        ((Button) findViewById(R.id.buttonClear))
+                .setOnClickListener(new View.OnClickListener() {
+
+                    public void onClick(View arg0) {
+                        // TODO Auto-generated method stub
+                        for (SimpleXYSeries i : new SimpleXYSeries[] {
+                                stepHistorySeries, vectorAccelHistorySeries,
+                                medianAccelHistorySeries,
+                                meanAccelHistorySeries }) {
+                            while (i.size() > 0) {
+                                i.removeFirst();
+                            }
+
+                        }
+                        stepsTaken = 0;
+                        meanSteps = 0;
+                        aprHistoryPlot.redraw();
+                        ((TextView) findViewById(R.id.stepsTakenMean))
+                                .setText(" Mean Steps:\n " + (meanSteps));
+                        ((TextView) findViewById(R.id.stepsTakenMedian))
+                                .setText(" Median Steps:\n " + (stepsTaken));
+                    }
+                });
     }
 
     private void updateWindowSize() {
-        TextView tv =(TextView) findViewById(R.id.windowSizeInput);
-        if(WINDOW_SIZE < 1)
+        TextView tv = (TextView) findViewById(R.id.windowSizeInput);
+        if (WINDOW_SIZE < 1)
             WINDOW_SIZE = 1;
-        tv.setText("Window size: "+WINDOW_SIZE);
+        tv.setText("Window size: " + WINDOW_SIZE);
     }
+
+    private void updateStepThreshold() {
+        TextView tv = (TextView) findViewById(R.id.stepThreshold);
+        if (stepThreshold < 0.1)
+            stepThreshold = 0.1;
+        tv.setText("Step threshold: " + df.format(stepThreshold));
+    }
+
     private void cleanup() {
-        // aunregister with the orientation sensor before exiting:
+        // unregister with the orientation sensor before exiting:
         sensorMgr.unregisterListener(this);
         finish();
     }
 
     // Called whenever a new orSensor reading is taken.
     public synchronized void onSensorChanged(SensorEvent sensorEvent) {
+        if (paused)
+            return;
         // get rid the oldest sample in history:
         if (vectorAccelHistorySeries.size() > HISTORY_SIZE) {
             vectorAccelHistorySeries.removeFirst();
             medianAccelHistorySeries.removeFirst();
             meanAccelHistorySeries.removeFirst();
+            stepHistorySeries.removeFirst();
         }
 
         // add the latest history sample:
@@ -184,43 +277,51 @@ public class GraphActivity extends Activity implements SensorEventListener {
         LinkedList<Double> medianList = new LinkedList<Double>(lastAccels);
         Collections.sort(medianList);
 
-        double sum= 0;
+        double sum = 0;
         for (Double d : medianList) {
             sum += d;
         }
-        double mean = sum /medianList.size();
+        double mean = sum / medianList.size();
         meanAccels.addLast(mean);
         while (meanAccels.size() > WINDOW_SIZE) {
             meanAccels.removeFirst();
         }
-       
+
         // Get the median value
-        double median = medianList.get(medianList.size()/2);
+        double median = medianList.get(medianList.size() / 2);
         meanAccelHistorySeries.addLast(null, mean);
         medianAccels.addLast(median);
         while (medianAccels.size() > WINDOW_SIZE) {
             medianAccels.removeFirst();
         }
         medianAccelHistorySeries.addLast(null, median);
-        DecimalFormat df = new DecimalFormat("##.##");
-       
+
         ((TextView) findViewById(R.id.medianVector)).setText(" Median: "
-                +  df.format(median));
+                + df.format(median));
+        boolean stepped = false;
         if (medianAccels.getLast() - medianAccels.getFirst() <= 0.5
-                && medianAccels.get(medianAccels.size() / 2) > 1.8) {
-            ((TextView) findViewById(R.id.stepsTaken)).setText(" Median Steps: "
-                    + (stepsTaken++));
-
+                && medianAccels.get(medianAccels.size() / 2) > stepThreshold) {
+            ((TextView) findViewById(R.id.stepsTakenMedian))
+                    .setText(" Median Steps: \n" + (++stepsTaken));
+            stepped = true;
+            if (!meanLabels)
+                stepHistorySeries.addLast(null,
+                        medianAccels.get(medianAccels.size() / 2));
         }
-        
+
         ((TextView) findViewById(R.id.meanVector)).setText(" Mean: "
-                +  df.format(mean));
+                + df.format(mean));
         if (meanAccels.getLast() - meanAccels.getFirst() <= 0.5
-                && meanAccels.get(meanAccels.size() / 2) > 1.3) {
-            ((TextView) findViewById(R.id.stepsTakenMean)).setText(" Mean Steps: "
-                    + (meanSteps++));
-
+                && meanAccels.get(meanAccels.size() / 2) > stepThreshold) {
+            ((TextView) findViewById(R.id.stepsTakenMean))
+                    .setText(" Mean Steps:\n " + (++meanSteps));
+            stepped = true;
+            if (meanLabels)
+                stepHistorySeries.addLast(null,
+                        medianAccels.get(medianAccels.size() / 2));
         }
+        if (!stepped)
+            stepHistorySeries.addLast(null, null);
         // redraw the Plots:
         aprHistoryPlot.redraw();
     }
