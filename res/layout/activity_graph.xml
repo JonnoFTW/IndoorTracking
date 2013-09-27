@@ -100,9 +100,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="ToggleButton" 
-                android:textOn="Mean"
+                android:textOn="Median"
                 android:enabled="true"
-                android:textOff="Median"/>
+                android:textOff="Mean"/>
 
             <TextView
                 android:id="@+id/windowSizeInput"
