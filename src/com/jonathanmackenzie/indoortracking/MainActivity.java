@@ -28,6 +28,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.View.OnLayoutChangeListener;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.ImageView;
@@ -91,7 +92,14 @@ public class MainActivity extends Activity implements SensorEventListener,
         
         LinearLayout ll = (LinearLayout) findViewById(R.id.mainView);
         iv = (MyImageView)findViewById(R.id.istMap);// new MyImageView(getApplicationContext());
-        
+        iv.addOnLayoutChangeListener(new OnLayoutChangeListener() {
+            
+            public void onLayoutChange(View v, int left, int top, int right,
+                    int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                // TODO Auto-generated method stub
+                resetLocation(null);
+            }
+        });
         // addContentView(new MyImageView(this), );
         prefs.registerOnSharedPreferenceChangeListener(this);
 
@@ -214,8 +222,8 @@ public class MainActivity extends Activity implements SensorEventListener,
                 Log.i("MainActivity","Step taken");
                 playStepSound();
                 steps++;
-                x += Math.cos(yaw) * stepDist / iv.getDistScale() * iv.getXScale(); // This is in metres
-                y -= Math.sin(yaw) * stepDist /  iv.getDistScale() * iv.getYScale();
+                x += Math.cos(yaw) * stepDist / iv.getHorizontalDistScale() * iv.getXScale(); // This is in metres
+                y -= Math.sin(yaw) * stepDist /  iv.getVerticalDistScale() * iv.getYScale();
                 stepXY.add(new Point(x, y));
                 Log.i("MainActivity", "Steps at :"+stepXY);
               

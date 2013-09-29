@@ -40,19 +40,26 @@ public class MyImageView extends ImageView {
     private void init(Context context) {
         this.ma = (MainActivity) context;
         p.setStrokeWidth(0f);
-        Bitmap bm = BitmapFactory.decodeResource(getResources(),
-                R.drawable.ist_level_3);
-        imgSizeX = 774;// bm.getWidth();
-        imgSizeY = 863; // bm.getHeight();
+        BitmapFactory.Options dimensions = new BitmapFactory.Options(); 
+        dimensions.inJustDecodeBounds = true;
+        Bitmap mBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ist_level_3, dimensions);
+        imgSizeY = dimensions.outHeight;
+        imgSizeX =  dimensions.outWidth;
+        Log.i("MyImageView","Image size: "+imgSizeX+", "+imgSizeY);
+        //imgSizeX = 774;// bm.getWidth();
+        //imgSizeY = 863; // bm.getHeight();
         // 131px = 5m irl
 
     }
 
-    public float getDistScale() {
+    public float getHorizontalDistScale() {
         // pixels per meter * horizontal scale
         return (131 / 5) * getXScale();
     }
-
+    public float getVerticalDistScale() {
+        // pixels per meter * horizontal scale
+        return (131 / 5) * getYScale();
+    }
     public float getXScale() {
         return (float) getWidth() / imgSizeX;
     }
@@ -73,8 +80,8 @@ public class MyImageView extends ImageView {
 
         Log.i("MyImageView", String.format(
                 // X Y is stored to scale
-                "xy %.2f,%.2f Scales %.2f, %.2f, %.2f view %d,%d", x, y,
-                getXScale(), getYScale(), getDistScale(), getWidth(),
+                "xy %.2f,%.2f Scales x:%.2f, y:%.2f, xd:%.2f, yd:%.2f view %d,%d", x, y,
+                getXScale(), getYScale(), getHorizontalDistScale(), getVerticalDistScale(), getWidth(),
                 getHeight()));
 
         if (!stepXY.isEmpty()) {
