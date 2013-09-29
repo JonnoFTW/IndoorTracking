@@ -65,6 +65,9 @@ public class GraphActivity extends Activity implements SensorEventListener {
 	private static int WINDOW_SIZE = 3;
 	private boolean paused = false;
 	private boolean meanLabels = true;
+	   private long lastStep = System.nanoTime(); // When the last step was taken, steps take 0.5s
+	    private long stepTimeout = 500000000l;
+
 
 	/** Called when the activity is first created. */
 	@Override
@@ -265,6 +268,13 @@ public class GraphActivity extends Activity implements SensorEventListener {
 		while (lastAccels.size() > WINDOW_SIZE) {
 			lastAccels.removeFirst();
 		}
+		boolean stepTaken = v > stepThreshold;
+		if(stepTaken) {
+		    System.nanoTime();
+		    
+		}
+		// Could probably use the mean filter value and use the timeout;
+		
 		// Use an extra list to get the median value because we need to sort the
 		// data
 		LinkedList<Double> medianList = new LinkedList<Double>(lastAccels);
@@ -317,6 +327,7 @@ public class GraphActivity extends Activity implements SensorEventListener {
 			stepHistorySeries.addLast(null, null);
 		// redraw the Plots:
 		aprHistoryPlot.redraw();
+		
 	}
 
 	public void onAccuracyChanged(Sensor sensor, int i) {

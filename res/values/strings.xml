@@ -17,7 +17,6 @@
     <string name="settings_male">Male</string>
     <string name="settings_text_sex">Sex</string>
     <string name="settings_text_height">Height</string>
-    <string name="settings_show_graph">Show Accelerometer Graph</string>
     <string name="title_activity_help">Help</string>
     <string name="main_map_descr">Map of the IST building</string>
     <string name="help_text">Walk around</string>

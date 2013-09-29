@@ -6,47 +6,40 @@
     android:orientation="vertical"
     tools:context=".MainActivity" >
 
-     
     <com.jonathanmackenzie.indoortracking.MyImageView
         android:id="@+id/istMap"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:scaleType=""
-        android:src="@drawable/ist_level_3" 
-        android:onClick="resetLocation" />
+        android:onClick="resetLocation"
+        android:scaleType="fitStart"
+        android:src="@drawable/ist_level_3" />
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    <TextView
+        android:id="@+id/textViewYaw"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+        android:background="#ffffff"
+        android:text="@string/yaw" />
 
-        <LinearLayout
-            android:layout_width="200dp"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" >
+    <TextView
+        android:id="@+id/textViewX"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="#ffffff"
+        android:text="X: " />
 
-            <TextView
-                android:id="@+id/textViewYaw"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="#ffffff"
-                android:text="@string/yaw" />
+    <TextView
+        android:id="@+id/textViewY"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="#ffffff"
+        android:text="Y: " />
 
-            <TextView
-                android:id="@+id/textViewX"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="#ffffff"
-                android:text="X: " />
-
-            <TextView
-                android:id="@+id/textViewY"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="#ffffff"
-                android:text="Y: " />
-
-        </LinearLayout>
-    </LinearLayout>
+    <TextView
+        android:id="@+id/textViewSteps"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="#ffffff"
+        android:text="Steps: " />
 
 </LinearLayout>

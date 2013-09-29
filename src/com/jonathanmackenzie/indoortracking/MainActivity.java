@@ -18,6 +18,8 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.media.AudioManager;
+import android.media.SoundPool;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -38,7 +40,7 @@ public class MainActivity extends Activity implements SensorEventListener,
 
     private String currentSex = "Male";
     private int height = 180;
-    private float yaw = 0, pitch = 0, roll = 0;
+    private float yaw = 0;
     private static float x = 0;
     private static float y = 0;
     private float stepDist = 0;
@@ -57,12 +59,15 @@ public class MainActivity extends Activity implements SensorEventListener,
     private float[] mOrientation = new float[3];
     private SharedPreferences prefs;
 
-    private static LinkedList<Double> lastAccels, meanAccels;
+    private static LinkedList<Double> lastAccels;
     private double g = 9.81;
-    private double stepThreshold = 1;
-    private static int WINDOW_SIZE = 3;
+    private double stepThreshold = 0.5;
     private MyImageView iv;
     private int steps;
+    private long lastStep = System.nanoTime(); // When the last step was taken, steps take 0.5s
+    private long stepTimeout = 500000000l;
+    private static SoundPool soundPool;
+    private static int stepSound;
 
     public class Point {
         public float x, y;
@@ -70,6 +75,9 @@ public class MainActivity extends Activity implements SensorEventListener,
         public Point(float x, float y) {
             this.x = x;
             this.y = y;
+        }
+        public String toString() {
+            return x+","+y;
         }
     }
 
@@ -96,11 +104,15 @@ public class MainActivity extends Activity implements SensorEventListener,
         mMagnetometer = mSensorManager
                 .getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         updateSettings();
-        meanAccels = new LinkedList<Double>();
         lastAccels = new LinkedList<Double>();
         resetLocation(null);
+        soundPool = new SoundPool(1, AudioManager.STREAM_MUSIC, 100);
+        stepSound = soundPool.load(this, R.raw.step_sound, 1);
     }
 
+    public static void playStepSound() {
+        soundPool.play(stepSound, 1, 1, 1, 0, 1f);
+    }
     public List<Point> getSteps() {
         return stepXY;
     }
@@ -118,9 +130,10 @@ public class MainActivity extends Activity implements SensorEventListener,
     }
     public void resetLocation(View v) {
         steps = 0;
-        x = 163;
-        y = 414;
+        x = 163 * iv.getXScale();
+        y = 414 * iv.getYScale();
         stepXY.clear();
+        stepXY.add(new Point(x, y));
         iv.invalidate();
         Log.i("MainActivity", "Location reset");
     }
@@ -133,14 +146,8 @@ public class MainActivity extends Activity implements SensorEventListener,
         } catch (Exception e) {
             Log.e("Settings", e.toString());
         } finally {
-            ((TextView) findViewById(R.id.textViewHeight)).setText("Height: "
-                    + height);
-            ((TextView) findViewById(R.id.textViewSex)).setText("Sex: "
-                    + currentSex);
 
             stepDist = getSexFactor() * height;
-            ((TextView) findViewById(R.id.textViewStepDist))
-                    .setText("Step dist: " + stepDist);
         }
     }
 
@@ -195,52 +202,23 @@ public class MainActivity extends Activity implements SensorEventListener,
             float stepDist = genFactor * height;
             // accelerations
             double xa = event.values[0], ya = event.values[1], za = event.values[2];
-            ((TextView) findViewById(R.id.textViewXAccel)).setText("Xaccel: "
-                    + df.format(event.values[0]));
-            ((TextView) findViewById(R.id.textViewYAccel)).setText("Yaccel: "
-                    + df.format(event.values[1]));
-            ((TextView) findViewById(R.id.textViewZAccel)).setText("Zaccel: "
-                    + df.format(event.values[2]));
 
             double accelVector = Math.sqrt(xa * xa + ya * ya + za * za) - 9.81; // account
-                                                                                // for
-                                                                                // acceleration
-                                                                                // at
-                                                                                // sea
-                                                                                // level
             g = 0.9 * g + 0.1 * accelVector;
             double v = accelVector - g;
             lastAccels.add(v);
-            while (lastAccels.size() > WINDOW_SIZE) {
-                lastAccels.removeFirst();
-            }
-            while (meanAccels.size() > WINDOW_SIZE) {
-                meanAccels.removeFirst();
-            }
-            // Use an extra list to get the median value because we need to sort
-            // the
-            // data
-            LinkedList<Double> medianList = new LinkedList<Double>(lastAccels);
-            Collections.sort(medianList);
-
-            double sum = 0;
-            for (Double d : medianList) {
-                sum += d;
-            }
-            double mean = sum / medianList.size();
-            meanAccels.addLast(mean);
- 
-            boolean stepTaken = meanAccels.getLast()
-                    - meanAccels.getFirst() <= 0.5
-                    && meanAccels.get(meanAccels.size() / 2) > stepThreshold;
-            ((TextView) findViewById(R.id.textViewAccelVector))
-                    .setText("accel vector: " + df.format(accelVector));
-            if (stepTaken) {
+            boolean stepTaken = v > stepThreshold;
+           
+            if (stepTaken && System.nanoTime() >= lastStep + stepTimeout ) {
+                lastStep = System.nanoTime();
+                Log.i("MainActivity","Step taken");
+                playStepSound();
                 steps++;
+                x += Math.cos(yaw) * stepDist / iv.getDistScale() * iv.getXScale(); // This is in metres
+                y -= Math.sin(yaw) * stepDist /  iv.getDistScale() * iv.getYScale();
                 stepXY.add(new Point(x, y));
-                x += Math.cos(yaw) * stepDist;
-                y -= Math.sin(yaw) * stepDist;
-                stepXY.add(new Point(x, y));
+                Log.i("MainActivity", "Steps at :"+stepXY);
+              
                 iv.invalidate();
                 ((TextView)findViewById(R.id.textViewSteps)).setText("Steps: "+steps);
             }
@@ -256,19 +234,10 @@ public class MainActivity extends Activity implements SensorEventListener,
                     mLastMagnetometer);
             SensorManager.getOrientation(mR, mOrientation);
             double rad_deg = 180.0 / Math.PI;
-            yaw = mOrientation[0];// * rad_deg; // radians to degrees
-            pitch = mOrientation[1];// * rad_deg;
-            roll = mOrientation[2];// * rad_deg;
+            yaw = mOrientation[0]; // * rad_deg; // radians to degrees
             TextView tvYaw = (TextView) findViewById(R.id.textViewYaw);
-            TextView tvYawD = (TextView) findViewById(R.id.textViewYawDegrees);
-            TextView tvRoll = (TextView) findViewById(R.id.textViewRoll);
-            TextView tvPitch = (TextView) findViewById(R.id.textViewPitch);
             tvYaw.setText("Yaw: " + df.format(yaw));
-            tvYawD.setText("YawDegrees: " + df.format((yaw * rad_deg)));
-            tvPitch.setText("Pitch: " + df.format(pitch));
-            tvRoll.setText("Roll: " + df.format(roll));
         }
-
     }
 
     @Override

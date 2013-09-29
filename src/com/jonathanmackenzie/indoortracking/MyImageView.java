@@ -17,7 +17,7 @@ import android.widget.ImageView;
 
 public class MyImageView extends ImageView {
     private Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private float scaleX, scaleY;
+    public float scaleStep;
     private int imgSizeX, imgSizeY;
     private MainActivity ma;
 
@@ -42,9 +42,23 @@ public class MyImageView extends ImageView {
         p.setStrokeWidth(0f);
         Bitmap bm = BitmapFactory.decodeResource(getResources(),
                 R.drawable.ist_level_3);
-        imgSizeX =774;// bm.getWidth();
-        imgSizeY =863; //bm.getHeight();
+        imgSizeX = 774;// bm.getWidth();
+        imgSizeY = 863; // bm.getHeight();
         // 131px = 5m irl
+
+    }
+
+    public float getDistScale() {
+        // pixels per meter * horizontal scale
+        return (131 / 5) * getXScale();
+    }
+
+    public float getXScale() {
+        return (float) getWidth() / imgSizeX;
+    }
+
+    public float getYScale() {
+        return (float) getHeight() / imgSizeY;
     }
 
     @Override
@@ -54,18 +68,14 @@ public class MyImageView extends ImageView {
         float x = ma.getX();
         float y = ma.getY();
 
-        // Log.i("MainActivity","Drawing imageview");
-        scaleX = (float) imgSizeX / getWidth();
-        scaleY = (float) imgSizeY / getHeight();
         p.setARGB(255, 0, 255, 20);
         p.setStyle(Style.FILL);
 
-        canvas.drawCircle((x * scaleX), (y * scaleY), 10, p);
-        Log.i("MyImageView",
-                String.format(
-                        "xy %.2f,%.2f Drawing %.2f,%.2f Scales %.2f, %.2f imgsize %d,%d canvas %d,5d",
-                        x, y, (x * scaleX), (y * scaleY), scaleX, scaleY,
-                        imgSizeX, imgSizeY,getWidth(),getHeight()));
+        Log.i("MyImageView", String.format(
+                // X Y is stored to scale
+                "xy %.2f,%.2f Scales %.2f, %.2f, %.2f view %d,%d", x, y,
+                getXScale(), getYScale(), getDistScale(), getWidth(),
+                getHeight()));
 
         if (!stepXY.isEmpty()) {
             p.setARGB(255, 255, 20, 20);
@@ -74,6 +84,7 @@ public class MyImageView extends ImageView {
                 canvas.drawLine(p1.x, p1.y, point.x, point.y, p);
                 p1 = point;
             }
+            canvas.drawCircle((p1.x), (p1.y), 5, p);
         }
 
     }

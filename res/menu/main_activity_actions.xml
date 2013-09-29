@@ -15,6 +15,6 @@
         android:id="@+id/action_graph"
         android:icon="@android:drawable/ic_menu_gallery"
         android:showAsAction="ifRoom|withText"
-        android:title="@string/ab_title_graph"
-        />
+        android:title="@string/ab_title_graph"/>
+
 </menu>
