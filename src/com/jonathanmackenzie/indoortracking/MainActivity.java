@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import android.R.bool;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -68,7 +69,8 @@ public class MainActivity extends Activity implements SensorEventListener,
     private long lastStep = System.nanoTime(); // When the last step was taken, steps take 0.5s
     private long stepTimeout = 500000000l;
     private static SoundPool soundPool;
-    private static int stepSound;
+    private static int stepSound,stepSound2, resetSound;
+    private static boolean step1 =false;
 
     public class Point {
         public float x, y;
@@ -96,11 +98,9 @@ public class MainActivity extends Activity implements SensorEventListener,
             
             public void onLayoutChange(View v, int left, int top, int right,
                     int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
-                // TODO Auto-generated method stub
                 resetLocation(null);
             }
         });
-        // addContentView(new MyImageView(this), );
         prefs.registerOnSharedPreferenceChangeListener(this);
 
         super.onCreate(savedInstanceState);
@@ -113,13 +113,22 @@ public class MainActivity extends Activity implements SensorEventListener,
                 .getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         updateSettings();
         lastAccels = new LinkedList<Double>();
-        resetLocation(null);
+        
         soundPool = new SoundPool(1, AudioManager.STREAM_MUSIC, 100);
         stepSound = soundPool.load(this, R.raw.step_sound, 1);
+        stepSound2 = soundPool.load(this, R.raw.step_sound2, 1);
+        resetSound = soundPool.load(this, R.raw.reset_sound, 1);
     }
+    
 
     public static void playStepSound() {
-        soundPool.play(stepSound, 1, 1, 1, 0, 1f);
+        if(step1) {
+            soundPool.play(stepSound, 1, 1, 1, 0, 1f);
+            step1= false;
+        } else {
+            soundPool.play(stepSound2, 1, 1, 1, 0, 1f);
+            step1 = true;
+        }
     }
     public List<Point> getSteps() {
         return stepXY;
@@ -136,6 +145,9 @@ public class MainActivity extends Activity implements SensorEventListener,
     public void setY(float y) {
         MainActivity.y = y;
     }
+    public float getOrientation() {
+        return yaw;
+    }
     public void resetLocation(View v) {
         steps = 0;
         x = 163 * iv.getXScale();
@@ -144,6 +156,7 @@ public class MainActivity extends Activity implements SensorEventListener,
         stepXY.add(new Point(x, y));
         iv.invalidate();
         Log.i("MainActivity", "Location reset");
+        soundPool.play(resetSound, 1, 1,1,0,1);
     }
 
     private void updateSettings() {
@@ -205,9 +218,6 @@ public class MainActivity extends Activity implements SensorEventListener,
             System.arraycopy(event.values, 0, mLastAccelerometer, 0,
                     event.values.length);
             mLastAccelerometerSet = true;
-            // Detect Step
-            float genFactor = (currentSex.equals("Female")) ? 0.413f : 0.415f;
-            float stepDist = genFactor * height;
             // accelerations
             double xa = event.values[0], ya = event.values[1], za = event.values[2];
 
@@ -225,7 +235,7 @@ public class MainActivity extends Activity implements SensorEventListener,
                 x += Math.cos(yaw) * stepDist / iv.getHorizontalDistScale() * iv.getXScale(); // This is in metres
                 y -= Math.sin(yaw) * stepDist /  iv.getVerticalDistScale() * iv.getYScale();
                 stepXY.add(new Point(x, y));
-                Log.i("MainActivity", "Steps at :"+stepXY);
+              //  Log.i("MainActivity", "Steps at :"+stepXY);
               
                 iv.invalidate();
                 ((TextView)findViewById(R.id.textViewSteps)).setText("Steps: "+steps);

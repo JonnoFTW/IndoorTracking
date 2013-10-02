@@ -91,6 +91,8 @@ public class MyImageView extends ImageView {
                 canvas.drawLine(p1.x, p1.y, point.x, point.y, p);
                 p1 = point;
             }
+            // Draw the user 
+            // should be an arrow to indicate orientation
             canvas.drawCircle((p1.x), (p1.y), 5, p);
         }
 

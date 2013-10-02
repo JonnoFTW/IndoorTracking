@@ -74,7 +74,9 @@ public final class R {
         public static final int main_activity_actions=0x7f0a0003;
     }
     public static final class raw {
-        public static final int step_sound=0x7f050000;
+        public static final int reset_sound=0x7f050000;
+        public static final int step_sound=0x7f050001;
+        public static final int step_sound2=0x7f050002;
     }
     public static final class string {
         public static final int ab_title_graph=0x7f070009;
