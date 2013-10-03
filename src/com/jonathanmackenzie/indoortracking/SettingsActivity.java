@@ -79,6 +79,9 @@ public class SettingsActivity extends PreferenceActivity
         
         bindPreferenceSummaryToValue(findPreference("height_value"));
         bindPreferenceSummaryToValue(findPreference("sex_value"));
+        bindPreferenceSummaryToValue(findPreference("threshold_value"));
+        bindPreferenceSummaryToValue(findPreference("timeout_value"));
+        bindPreferenceSummaryToValue(findPreference("windowsize_value"));
     }
 
     /** {@inheritDoc} */

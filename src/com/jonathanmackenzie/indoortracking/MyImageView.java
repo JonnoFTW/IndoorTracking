@@ -2,18 +2,16 @@ package com.jonathanmackenzie.indoortracking;
 
 import java.util.List;
 
-import com.jonathanmackenzie.indoortracking.MainActivity.Point;
-
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
-import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.widget.ImageView;
+
+import com.jonathanmackenzie.indoortracking.MainActivity.Point;
 
 public class MyImageView extends ImageView {
     private Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -42,7 +40,7 @@ public class MyImageView extends ImageView {
         p.setStrokeWidth(0f);
         BitmapFactory.Options dimensions = new BitmapFactory.Options(); 
         dimensions.inJustDecodeBounds = true;
-        Bitmap mBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ist_level_3, dimensions);
+        BitmapFactory.decodeResource(getResources(), R.drawable.ist_level_3, dimensions);
         imgSizeY = dimensions.outHeight;
         imgSizeX =  dimensions.outWidth;
         Log.i("MyImageView","Image size: "+imgSizeX+", "+imgSizeY);
@@ -72,18 +70,15 @@ public class MyImageView extends ImageView {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         List<Point> stepXY = ma.getSteps();
-        float x = ma.getX();
-        float y = ma.getY();
-
         p.setARGB(255, 0, 255, 20);
         p.setStyle(Style.FILL);
 
-        Log.i("MyImageView", String.format(
+      /*  Log.i("MyImageView", String.format(
                 // X Y is stored to scale
                 "xy %.2f,%.2f Scales x:%.2f, y:%.2f, xd:%.2f, yd:%.2f view %d,%d", x, y,
                 getXScale(), getYScale(), getHorizontalDistScale(), getVerticalDistScale(), getWidth(),
                 getHeight()));
-
+           */
         if (!stepXY.isEmpty()) {
             p.setARGB(255, 255, 20, 20);
             Point p1 = stepXY.get(0);

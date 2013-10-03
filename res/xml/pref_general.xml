@@ -1,11 +1,6 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
 
     <PreferenceCategory android:title="@string/pref_header_general" >
-    
-
-        <!-- NOTE: EditTextPreference accepts EditText attributes. -->
-        <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->
-        
         <EditTextPreference
             android:defaultValue="@string/pref_default_height"
             android:inputType="number"
@@ -24,6 +19,32 @@
             android:negativeButtonText="@null"
             android:positiveButtonText="@null"
             android:title="@string/pref_title_sex" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/pref_header_advanced" >
+        <EditTextPreference
+            android:defaultValue="@string/pref_default_timeout"
+            android:inputType="numberDecimal"
+            android:key="timeout_value"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/pref_title_timeout" />
+        <EditTextPreference
+            android:defaultValue="@string/pref_default_threshold"
+            android:inputType="numberDecimal"
+            android:key="threshold_value"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/pref_title_threshold" />
+        <EditTextPreference
+            android:defaultValue="@string/pref_default_windowsize"
+            android:inputType="number"
+            android:key="windowsize_value"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/pref_title_windowsize" />
     </PreferenceCategory>
 
 </PreferenceScreen>

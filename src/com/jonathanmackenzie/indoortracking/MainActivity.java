@@ -5,16 +5,12 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import android.R.bool;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.pm.ActivityInfo;
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.drawable.Drawable;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -26,20 +22,14 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.View.OnLayoutChangeListener;
-import android.view.View.OnTouchListener;
-import android.view.ViewGroup.LayoutParams;
-import android.widget.ImageView;
-import android.widget.ImageView.ScaleType;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class MainActivity extends Activity implements SensorEventListener,
         OnSharedPreferenceChangeListener {
 
+    private int window_size = 3;
     private String currentSex = "Male";
     private int height = 180;
     private float yaw = 0;
@@ -49,6 +39,7 @@ public class MainActivity extends Activity implements SensorEventListener,
     private SensorManager mSensorManager;
     private Sensor mMagnetometer;
     private Sensor mAccelerometer;
+    private Sensor mLinearAccelerometer;
 
     private float[] mLastAccelerometer = new float[3];
     private float[] mLastMagnetometer = new float[3];
@@ -61,16 +52,17 @@ public class MainActivity extends Activity implements SensorEventListener,
     private float[] mOrientation = new float[3];
     private SharedPreferences prefs;
 
-    private static LinkedList<Double> lastAccels;
-    private double g = 9.81;
-    private double stepThreshold = 0.5;
+    private static LinkedList<Double> lastAccels, medianAccels;
+    private double g = 0;
+    private double stepThreshold = 0.5d;
     private MyImageView iv;
     private int steps;
-    private long lastStep = System.nanoTime(); // When the last step was taken, steps take 0.5s
-    private long stepTimeout = 500000000l;
+    private long lastStep = System.nanoTime(); // When the last step was taken,
+                                               // steps take 0.5s
+    private long stepTimeout = 400000000l;
     private static SoundPool soundPool;
-    private static int stepSound,stepSound2, resetSound;
-    private static boolean step1 =false;
+    private static int stepSound, stepSound2, resetSound;
+    private static boolean step1 = false;
 
     public class Point {
         public float x, y;
@@ -79,8 +71,9 @@ public class MainActivity extends Activity implements SensorEventListener,
             this.x = x;
             this.y = y;
         }
+
         public String toString() {
-            return x+","+y;
+            return x + "," + y;
         }
     }
 
@@ -90,64 +83,57 @@ public class MainActivity extends Activity implements SensorEventListener,
                 .getDefaultSharedPreferences(getApplicationContext());
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
-        
-        
-        LinearLayout ll = (LinearLayout) findViewById(R.id.mainView);
-        iv = (MyImageView)findViewById(R.id.istMap);// new MyImageView(getApplicationContext());
+
+        iv = (MyImageView) findViewById(R.id.istMap);// new
+                                                     // MyImageView(getApplicationContext());
         iv.addOnLayoutChangeListener(new OnLayoutChangeListener() {
-            
+
             public void onLayoutChange(View v, int left, int top, int right,
-                    int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                    int bottom, int oldLeft, int oldTop, int oldRight,
+                    int oldBottom) {
                 resetLocation(null);
+                iv.removeOnLayoutChangeListener(this);
             }
         });
         prefs.registerOnSharedPreferenceChangeListener(this);
 
         super.onCreate(savedInstanceState);
-        updateSettings();
         getActionBar().show();
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mAccelerometer = mSensorManager
                 .getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mLinearAccelerometer = mSensorManager
+                .getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
         mMagnetometer = mSensorManager
                 .getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         updateSettings();
         lastAccels = new LinkedList<Double>();
-        
+        medianAccels = new LinkedList<Double>();
         soundPool = new SoundPool(1, AudioManager.STREAM_MUSIC, 100);
         stepSound = soundPool.load(this, R.raw.step_sound, 1);
         stepSound2 = soundPool.load(this, R.raw.step_sound2, 1);
         resetSound = soundPool.load(this, R.raw.reset_sound, 1);
+
     }
-    
 
     public static void playStepSound() {
-        if(step1) {
+        if (step1) {
             soundPool.play(stepSound, 1, 1, 1, 0, 1f);
-            step1= false;
+            step1 = false;
         } else {
             soundPool.play(stepSound2, 1, 1, 1, 0, 1f);
             step1 = true;
         }
     }
+
     public List<Point> getSteps() {
         return stepXY;
     }
-    public float getX() {
-        return x;
-    }
-    public float getY() {
-        return y;
-    }
-    public void setX(float x) {
-        MainActivity.x = x;
-    }
-    public void setY(float y) {
-        MainActivity.y = y;
-    }
+
     public float getOrientation() {
         return yaw;
     }
+
     public void resetLocation(View v) {
         steps = 0;
         x = 163 * iv.getXScale();
@@ -156,14 +142,19 @@ public class MainActivity extends Activity implements SensorEventListener,
         stepXY.add(new Point(x, y));
         iv.invalidate();
         Log.i("MainActivity", "Location reset");
-        soundPool.play(resetSound, 1, 1,1,0,1);
+        ((TextView) findViewById(R.id.textViewSteps))
+                .setText("Steps: " + steps);
+        soundPool.play(resetSound, 1, 1, 1, 0, 1);
     }
 
     private void updateSettings() {
         try {
             height = Integer.valueOf(prefs.getString("height_value", ""
                     + height));
-            currentSex = prefs.getString("sex_value", "Male");
+            currentSex   = prefs.getString("sex_value", "Male");
+            window_size  = Integer.valueOf(prefs.getString("windowsize_value", ""+window_size));
+            stepThreshold= Double.parseDouble(prefs.getString("threshold_value",""+ stepThreshold));
+            stepTimeout  = (long) (Double.parseDouble(prefs.getString("timeout_value",""+ stepTimeout)) * 100000000l);
         } catch (Exception e) {
             Log.e("Settings", e.toString());
         } finally {
@@ -185,23 +176,22 @@ public class MainActivity extends Activity implements SensorEventListener,
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle presses on the action bar items
-        Class i = Object.class;
+        Intent in = null;
         switch (item.getItemId()) {
         case R.id.action_settings:
-            i = SettingsActivity.class;
+            in = new Intent(this, SettingsActivity.class);
             break;
         case R.id.action_help:
-            i = HelpActivity.class;
+            in = new Intent(this, HelpActivity.class);
             break;
         case R.id.action_graph:
-            i = GraphActivity.class;
+            in = new Intent(this, GraphActivity.class);
             break;
         default:
             break;
         }
-        if (i != Object.class) {
-            Log.i("Action bar", "Starting " + i);
-            startActivity(new Intent(this, i));
+        if (in != null) {
+            startActivity(in);
             return true;
         } else
             return super.onOptionsItemSelected(item);
@@ -213,35 +203,60 @@ public class MainActivity extends Activity implements SensorEventListener,
     }
 
     public synchronized void onSensorChanged(SensorEvent event) {
-        if (event.sensor == mAccelerometer) {
+        if (event.sensor == mLinearAccelerometer) {
+            // accelerations
+            double xa = event.values[0],
+                   ya = event.values[1], 
+                   za = event.values[2];
+            ((TextView)findViewById(R.id.textViewLinear)).setText(String.format("%.2f %.2f %.2f", xa,ya,za));
+            double accelVector = Math.sqrt(xa * xa + ya * ya + za * za);
+           
+            g = 0.9 * g + 0.1 * accelVector;
+            double v = accelVector - g;
+            lastAccels.addLast(v);
+            while (lastAccels.size() > window_size) {
+                lastAccels.removeFirst();
+            }
+            // Get the median value
+            LinkedList<Double> medianList = new LinkedList<Double>(lastAccels);
+            Collections.sort(medianList);
+            double median = medianList.get(medianList.size() / 2);
+            ((TextView)findViewById(R.id.textViewMedianAccel)).setText("Median Accel: "+df.format(median));
+            ((TextView)findViewById(R.id.textViewV)).setText("V: "+df.format(v));
+            medianAccels.addLast(median);
+            while (medianAccels.size() > window_size) {
+                medianAccels.removeFirst();
+            }
+
+            // Using get() on a linked list should be fine since there's
+            // a small windows size (3 or 4)
+            if (/*
+                 * medianAccels.getLast() - medianAccels.getFirst() <= 0.5 &&
+                 * medianAccels.get(medianAccels.size()/2)
+                 */v > stepThreshold
+                    && System.nanoTime() >= lastStep + stepTimeout) {
+                lastStep = System.nanoTime();
+                Log.i("MainActivity", "Step taken");
+                playStepSound();
+                steps++;
+                x += Math.cos(yaw) * stepDist / iv.getHorizontalDistScale()
+                        * iv.getXScale();
+                y -= Math.sin(yaw) * stepDist / iv.getVerticalDistScale()
+                        * iv.getYScale();
+                stepXY.add(new Point(x, y));
+                // Log.i("MainActivity", "Steps at :"+stepXY);
+
+                iv.invalidate();
+                ((TextView) findViewById(R.id.textViewSteps)).setText("Steps: "
+                        + steps);
+            }
+        }
+        else if (event.sensor == mAccelerometer) {
             // accelerations = Arrays..values;
             System.arraycopy(event.values, 0, mLastAccelerometer, 0,
                     event.values.length);
             mLastAccelerometerSet = true;
-            // accelerations
-            double xa = event.values[0], ya = event.values[1], za = event.values[2];
 
-            double accelVector = Math.sqrt(xa * xa + ya * ya + za * za) - 9.81; // account
-            g = 0.9 * g + 0.1 * accelVector;
-            double v = accelVector - g;
-            lastAccels.add(v);
-            boolean stepTaken = v > stepThreshold;
-           
-            if (stepTaken && System.nanoTime() >= lastStep + stepTimeout ) {
-                lastStep = System.nanoTime();
-                Log.i("MainActivity","Step taken");
-                playStepSound();
-                steps++;
-                x += Math.cos(yaw) * stepDist / iv.getHorizontalDistScale() * iv.getXScale(); // This is in metres
-                y -= Math.sin(yaw) * stepDist /  iv.getVerticalDistScale() * iv.getYScale();
-                stepXY.add(new Point(x, y));
-              //  Log.i("MainActivity", "Steps at :"+stepXY);
-              
-                iv.invalidate();
-                ((TextView)findViewById(R.id.textViewSteps)).setText("Steps: "+steps);
-            }
-            ((TextView) findViewById(R.id.textViewX)).setText("X: " + x);
-            ((TextView) findViewById(R.id.textViewY)).setText("Y: " + y);
         } else if (event.sensor == mMagnetometer) {
             System.arraycopy(event.values, 0, mLastMagnetometer, 0,
                     event.values.length);
@@ -251,10 +266,10 @@ public class MainActivity extends Activity implements SensorEventListener,
             SensorManager.getRotationMatrix(mR, null, mLastAccelerometer,
                     mLastMagnetometer);
             SensorManager.getOrientation(mR, mOrientation);
-            double rad_deg = 180.0 / Math.PI;
             yaw = mOrientation[0]; // * rad_deg; // radians to degrees
             TextView tvYaw = (TextView) findViewById(R.id.textViewYaw);
-            tvYaw.setText("Yaw: " + df.format(yaw));
+            tvYaw.setText("Yaw: " + df.format(yaw) + ", "
+                    + df.format(Math.toDegrees(yaw)));
         }
     }
 
@@ -265,9 +280,10 @@ public class MainActivity extends Activity implements SensorEventListener,
         mLastMagnetometerSet = false;
         mSensorManager.registerListener(this, mAccelerometer,
                 SensorManager.SENSOR_DELAY_NORMAL);
+        mSensorManager.registerListener(this, mLinearAccelerometer,
+                SensorManager.SENSOR_DELAY_NORMAL);
         mSensorManager.registerListener(this, mMagnetometer,
                 SensorManager.SENSOR_DELAY_NORMAL);
-
     }
 
     @Override
