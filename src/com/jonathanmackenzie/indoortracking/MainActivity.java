@@ -66,9 +66,10 @@ public class MainActivity extends Activity implements SensorEventListener,
     private int steps;
     private long lastStep = System.nanoTime(); // When the last step was taken,
                                                // steps take 0.5s
-    private long stepTimeout = (long) (0.5 * 1000000000l);
+    private float stepTimeout =  0.5f;
     protected float lastTouchY;
     protected float lastTouchX;
+	private float orientationYaw;
     private static SoundPool soundPool;
     private static int stepSound, stepSound2, resetSound;
     private static boolean step1 = false;
@@ -171,6 +172,13 @@ public class MainActivity extends Activity implements SensorEventListener,
     public float getYaw() {
         return yaw;
     }
+    /**
+     * Return the yaw of the orientation sensor
+     * @return
+     */
+    public float getOrientationYaw() {
+    	return orientationYaw;
+    }
 
     /**
      * Resets the steps and sets 
@@ -201,8 +209,10 @@ public class MainActivity extends Activity implements SensorEventListener,
                     "" + window_size));
             stepThreshold = Double.parseDouble(prefs.getString(
                     "threshold_value", "" + stepThreshold));
-            stepTimeout = (long) (Double.parseDouble(prefs.getString(
-                    "timeout_value", "" + stepTimeout)) * 1000000000l);
+            stepTimeout = (Float.parseFloat(prefs.getString(
+                    "timeout_value", "" + stepTimeout)));
+            Log.i("MainActivity",String.format("Settings are: height %d sex %s window_size %d threshold %.2f timeout %.2f",
+            		height,currentSex,window_size,stepThreshold,stepTimeout ));
         } catch (Exception e) {
             Log.e("Settings", e.toString());
         } finally {
@@ -290,14 +300,14 @@ public class MainActivity extends Activity implements SensorEventListener,
             }
             // Prevent multiple steps from being counted on a single peak
             // of the curve
-            boolean timedOut = System.nanoTime() >= lastStep + stepTimeout;
+            boolean timedOut = System.nanoTime() >= lastStep + (stepTimeout * 1000000000.0);
             if (meanAccels.getLast() > stepThreshold && timedOut) {
                 lastStep = System.nanoTime();
                 Log.i("MainActivity", "Step taken");
                 playStepSound();
                 steps++;
-                x += Math.cos(yaw) * stepDist * 5 / iv.getHorizontalDistScale();
-                y += Math.sin(yaw) * stepDist * 5 / iv.getVerticalDistScale();
+                x += Math.cos(yaw) * stepDist * 3 / iv.getHorizontalDistScale();
+                y += Math.sin(yaw) * stepDist * 3 / iv.getHorizontalDistScale();
                 stepXY.add(new Point(x, y));
 
                 iv.invalidate();
@@ -315,7 +325,7 @@ public class MainActivity extends Activity implements SensorEventListener,
                             + df.format(Math.toRadians(event.values[0])) + ", "
                             + df.format(event.values[0]));*/
             
-                yaw = (float) Math.toRadians(event.values[0] - 90);
+            orientationYaw = (float) (Math.toRadians(event.values[0]) - Math.toRadians(90f));
             iv.invalidate();
         }
         if (mLastAccelerometerSet && mLastMagnetometerSet) {
@@ -325,7 +335,7 @@ public class MainActivity extends Activity implements SensorEventListener,
                     mLastMagnetometer);
             SensorManager.getOrientation(mR, mOrientation);
            iv.invalidate();
-             //   yaw = (float) (mOrientation[0] - Math.toRadians(90)); 
+           yaw = (float) (mOrientation[0] - Math.toRadians(90)); 
           //  TextView tvYaw = (TextView) findViewById(R.id.textViewYaw);
           /*  tvYaw.setText("Yaw: "
                     + df.format(mOrientation[0] - Math.toRadians(90))

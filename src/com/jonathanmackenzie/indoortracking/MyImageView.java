@@ -60,11 +60,11 @@ public class MyImageView extends ImageView {
     */
     public float getHorizontalDistScale() {
         // pixels per meter * horizontal scale
-        return (131 / 5) * getXScale();
+        return  ((131 / 5f) * getXScale());
     }
     public float getVerticalDistScale() {
         // pixels per meter * horizontal scale
-        return (131 / 5) * getYScale();
+        return ((131 / 5f) * getYScale());
     }
     /**
      * The scaling along the X dimension.
@@ -112,6 +112,8 @@ public class MyImageView extends ImageView {
             p.setARGB(255,0,255,0);
             p.setStrokeWidth(3);
             canvas.drawLine(p1.x, p1.y,p1.x +(float) Math.cos(ma.getYaw())*30, p1.y +(float)Math.sin(ma.getYaw())*30, p);
+            p.setARGB(255,0,0,255);
+            canvas.drawLine(p1.x, p1.y,p1.x +(float) Math.cos(ma.getOrientationYaw())*30, p1.y +(float)Math.sin(ma.getOrientationYaw())*30, p);
         }
 
     }

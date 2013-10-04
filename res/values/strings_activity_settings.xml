@@ -14,7 +14,7 @@
     <string name="pref_title_timeout">Step Timeout (s)</string>
     <string name="pref_title_threshold">Step Threshold (ms²)</string>
     <string name="pref_title_windowsize">Window size</string>
-    <string name="pref_default_height">180</string>
+    <string name="pref_default_height">190</string>
     <string name="pref_default_threshold">0.9</string>
     <string name="pref_default_timeout">0.5</string>
     <string name="pref_default_windowsize">3</string>
