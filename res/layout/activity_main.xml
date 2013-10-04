@@ -11,7 +11,7 @@
         android:layout_width="wrap_content"
         android:layout_height="0dip"
         android:layout_weight="1"
-        android:scaleType="fitXY"
+        android:scaleType="centerInside"
         android:src="@drawable/ist_level_3" />
 
     <TextView

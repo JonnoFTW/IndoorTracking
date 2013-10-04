@@ -312,7 +312,7 @@ public class GraphActivity extends Activity implements SensorEventListener {
             lastStep = System.nanoTime();
             if (!meanLabels)
                 stepHistorySeries.addLast(null,
-                        medianAccels.get(medianAccels.size() / 2));
+                        median);
         }
 
         ((TextView) findViewById(R.id.meanVector)).setText(" Mean: "
@@ -325,7 +325,7 @@ public class GraphActivity extends Activity implements SensorEventListener {
             lastStep = System.nanoTime();
             if (meanLabels)
                 stepHistorySeries.addLast(null,
-                        medianAccels.getLast());
+                        mean);
         }
         if (!stepped)
             stepHistorySeries.addLast(null, null);
