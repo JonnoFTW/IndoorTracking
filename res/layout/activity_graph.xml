@@ -11,7 +11,7 @@
         android:layout_marginLeft="0dp"
         android:layout_marginRight="0dp"
         android:layout_marginTop="0dp"
-        android:layout_weight="0"
+        android:layout_weight="1"
         title="Acceleration History" />
 
     <LinearLayout
@@ -55,81 +55,83 @@
                 android:layout_height="wrap_content"
                 android:text="Mean: " />
         </LinearLayout>
-    </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:gravity="left"
-        android:orientation="horizontal" >
-
-        <ToggleButton
-            android:id="@+id/buttonPause"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textOff="Running"
-            android:textOn="Paused" />
+            android:gravity="right"
+            android:orientation="horizontal" >
 
-        <ToggleButton
-            android:id="@+id/toggleButtonMeanMedian"
-            android:layout_width="wrap_content"
+            <TextView
+                android:id="@+id/stepThreshold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Threshold: " />
+
+            <Button
+                android:id="@+id/buttonPlusThreshold"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+" />
+
+            <Button
+                android:id="@+id/buttonMinusThreshold"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="-" />
+
+            <Button
+                android:id="@+id/buttonClear"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Clear" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:enabled="true"
-            android:text="ToggleButton"
-            android:textOff="Mean"
-            android:textOn="Median" />
+            android:gravity="right"
+            android:orientation="horizontal" >
 
-        <TextView
-            android:id="@+id/windowSizeInput"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Window Size: " />
+            <ToggleButton
+                android:id="@+id/buttonPause"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textOff="Running"
+                android:textOn="Paused" />
 
-        <Button
-            android:id="@+id/buttonMinusWindow"
-            style="?android:attr/buttonStyleSmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="-" />
+            <ToggleButton
+                android:id="@+id/toggleButtonMeanMedian"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:enabled="true"
+                android:text="ToggleButton"
+                android:textOff="Mean"
+                android:textOn="Median" />
 
-        <Button
-            android:id="@+id/buttonPlusWindow"
-            style="?android:attr/buttonStyleSmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="+" />
-    </LinearLayout>
+            <TextView
+                android:id="@+id/windowSizeInput"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Window Size: " />
 
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+            <Button
+                android:id="@+id/buttonMinusWindow"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="-" />
 
-        <TextView
-            android:id="@+id/stepThreshold"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Threshold: " />
+            <Button
+                android:id="@+id/buttonPlusWindow"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+" />
+        </LinearLayout>
 
-        <Button
-            android:id="@+id/buttonPlusThreshold"
-            style="?android:attr/buttonStyleSmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="+" />
-
-        <Button
-            android:id="@+id/buttonMinusThreshold"
-            style="?android:attr/buttonStyleSmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="-" />
-
-        <Button
-            android:id="@+id/buttonClear"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Clear" />
     </LinearLayout>
 
 </LinearLayout>

@@ -3,24 +3,16 @@
     android:id="@+id/mainView"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
+    android:orientation="vertical" 
     tools:context=".MainActivity" >
 
     <com.jonathanmackenzie.indoortracking.MyImageView
         android:id="@+id/istMap"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="0dip"
         android:layout_weight="1"
-        android:onClick="resetLocation"
-        android:scaleType="centerInside"
+        android:scaleType="fitXY"
         android:src="@drawable/ist_level_3" />
-
-    <TextView
-        android:id="@+id/textViewYaw"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="#ffffff"
-        android:text="@string/yaw" />
 
     <TextView
         android:id="@+id/textViewSteps"
@@ -28,26 +20,5 @@
         android:layout_height="wrap_content"
         android:background="#ffffff"
         android:text="Steps: " />
-
-    <TextView
-        android:id="@+id/textViewMedianAccel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="#ffffff"
-        android:text="Median Accel: " />
-
-    <TextView
-        android:id="@+id/textViewV"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="#ffffff"
-        android:text="V: " />
-
-    <TextView
-        android:id="@+id/textViewLinear"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="#ffffff"
-        android:text=""  />
 
 </LinearLayout>

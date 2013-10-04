@@ -44,8 +44,12 @@ import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.xy.XYPlot;
 import com.androidplot.xy.XYSeries;
 
-// Monitor the phone's orientation sensor and plot the resulting azimuth pitch and roll values.
-// See: http://developer.android.com/reference/android/hardware/SensorEvent.html
+/**
+ * Adapted from the example at androidplot.com
+ * http://androidplot.com/docs/dynamically-plotting-sensor-data/
+ * @author Jonathan
+ *
+ */
 public class GraphActivity extends Activity implements SensorEventListener {
     private static final int HISTORY_SIZE = 100; // number of points to plot in
                                                  // history
@@ -61,7 +65,7 @@ public class GraphActivity extends Activity implements SensorEventListener {
     private LinkedList<Double> lastAccels, medianAccels, meanAccels;
     private int stepsTaken = 0, meanSteps = 0;
     private double g = 9.81;
-    private double stepThreshold = 1.5;
+    private double stepThreshold = 0.9;
     private static int WINDOW_SIZE = 3;
     private boolean paused = false;
     private boolean meanLabels = true;
@@ -99,6 +103,7 @@ public class GraphActivity extends Activity implements SensorEventListener {
         LineAndPointFormatter lpf = new LineAndPointFormatter(null,
                 Color.YELLOW, Color.YELLOW,
                 new PointLabelFormatter(Color.WHITE));
+        // Setting this was not described in the documentation....
         lpf.setPointLabeler(new PointLabeler() {
 
             public String getLabel(XYSeries s, int idx) {
@@ -179,7 +184,7 @@ public class GraphActivity extends Activity implements SensorEventListener {
         });
         updateWindowSize();
         updateStepThreshold();
-
+        // Buttons toggle the settings
         ((ToggleButton) findViewById(R.id.buttonPause))
                 .setOnCheckedChangeListener(new OnCheckedChangeListener() {
 
@@ -269,7 +274,6 @@ public class GraphActivity extends Activity implements SensorEventListener {
             lastAccels.removeFirst();
         }
 
-        // Could probably use the mean filter value and use the timeout;
 
         // Use an extra list to get the median value because we need to sort the
         // data
@@ -298,9 +302,9 @@ public class GraphActivity extends Activity implements SensorEventListener {
         ((TextView) findViewById(R.id.medianVector)).setText(" Median: "
                 + df.format(median));
         boolean stepped = false;
-        boolean timedOut = System.nanoTime() >= lastStep + 400000000l;
-        if (medianAccels.getLast() - medianAccels.getFirst() <= 0.5
-                && medianAccels.get(medianAccels.size() / 2) > stepThreshold
+        boolean timedOut = System.nanoTime() >= lastStep + stepTimeout;
+        if ( /* medianAccels.getLast() - medianAccels.getFirst() <= 0.5 
+                &&*/ medianAccels.getLast() > stepThreshold
                 && timedOut) {
             ((TextView) findViewById(R.id.stepsTakenMedian))
                     .setText(" Median Steps: \n" + (++stepsTaken));
@@ -313,15 +317,15 @@ public class GraphActivity extends Activity implements SensorEventListener {
 
         ((TextView) findViewById(R.id.meanVector)).setText(" Mean: "
                 + df.format(mean));
-        if (meanAccels.getLast() - meanAccels.getFirst() <= 0.5
-                && meanAccels.get(meanAccels.size() / 2) > stepThreshold) {
+        if (/*meanAccels.getLast() - meanAccels.getFirst() <= 0.5
+                &&*/ meanAccels.getLast() > stepThreshold && timedOut) {
             ((TextView) findViewById(R.id.stepsTakenMean))
                     .setText(" Mean Steps:\n " + (++meanSteps));
             stepped = true;
             lastStep = System.nanoTime();
             if (meanLabels)
                 stepHistorySeries.addLast(null,
-                        medianAccels.get(medianAccels.size() / 2));
+                        medianAccels.getLast());
         }
         if (!stepped)
             stepHistorySeries.addLast(null, null);

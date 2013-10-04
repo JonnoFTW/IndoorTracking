@@ -12,7 +12,11 @@ import android.util.Log;
 import android.widget.ImageView;
 
 import com.jonathanmackenzie.indoortracking.MainActivity.Point;
-
+/**
+ * A subclass of imageview that shows the user's path 
+ * @author Jonathan
+ *
+ */
 public class MyImageView extends ImageView {
     private Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
     public float scaleStep;
@@ -34,7 +38,10 @@ public class MyImageView extends ImageView {
         init(context);
         isInEditMode();
     }
-
+    /**
+     * Sets up the imageview and variables for the dimensions of the image
+     * @param context
+     */
     private void init(Context context) {
         this.ma = (MainActivity) context;
         p.setStrokeWidth(0f);
@@ -44,12 +51,13 @@ public class MyImageView extends ImageView {
         imgSizeY = dimensions.outHeight;
         imgSizeX =  dimensions.outWidth;
         Log.i("MyImageView","Image size: "+imgSizeX+", "+imgSizeY);
-        //imgSizeX = 774;// bm.getWidth();
-        //imgSizeY = 863; // bm.getHeight();
-        // 131px = 5m irl
 
     }
-
+   /**
+    * Gives the horizontal scaling, derived from the scale at the bottom of
+    * the IST Map. The scale is 131 pixels = 5m
+    * @return
+    */
     public float getHorizontalDistScale() {
         // pixels per meter * horizontal scale
         return (131 / 5) * getXScale();
@@ -58,10 +66,20 @@ public class MyImageView extends ImageView {
         // pixels per meter * horizontal scale
         return (131 / 5) * getYScale();
     }
+    /**
+     * The scaling along the X dimension.
+     * Provided because the image is scaled from the stored file to
+     * fit in the view
+     * @return
+     */
     public float getXScale() {
         return (float) getWidth() / imgSizeX;
     }
 
+    /**
+     * Scaling along the Y dimension
+     * @return
+     */
     public float getYScale() {
         return (float) getHeight() / imgSizeY;
     }
@@ -79,6 +97,7 @@ public class MyImageView extends ImageView {
                 getXScale(), getYScale(), getHorizontalDistScale(), getVerticalDistScale(), getWidth(),
                 getHeight()));
            */
+        // Plot the user's path
         if (!stepXY.isEmpty()) {
             p.setARGB(255, 255, 20, 20);
             Point p1 = stepXY.get(0);
@@ -89,6 +108,10 @@ public class MyImageView extends ImageView {
             // Draw the user 
             // should be an arrow to indicate orientation
             canvas.drawCircle((p1.x), (p1.y), 5, p);
+            // Draw a line from the circle to indicate current direction
+            p.setARGB(255,0,255,0);
+            p.setStrokeWidth(3);
+            canvas.drawLine(p1.x, p1.y,p1.x +(float) Math.cos(ma.getYaw())*30, p1.y +(float)Math.sin(ma.getYaw())*30, p);
         }
 
     }

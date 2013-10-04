@@ -2,13 +2,9 @@
 <resources>
 
     <string name="app_name">IndoorTracking</string>
-    <string name="hello_world">Hello cruel world!</string>
     <string name="menu_settings">Settings</string>
     <string name="title_activity_main">Indoor Tracking</string>
     <string name="title_activity_setup">SetupActivity</string>
-    <string name="edit_message">Your message here!</string>
-    <string name="button_send">Send</string>
-    <string name="title_activity_display_message">My Message</string>
     <string name="ab_title_help">Help</string>
     <string name="ab_title_graph">Graph</string>
     <string name="ab_title_settings">Settings</string>
@@ -19,7 +15,10 @@
     <string name="settings_text_height">Height</string>
     <string name="title_activity_help">Help</string>
     <string name="main_map_descr">Map of the IST building</string>
-    <string name="help_text">Walk around</string>
+    <string name="help_text">Start at the door of IST 307 facing out of the room. Tap the screen to reset to this position.
+        Hold the device flat in front of you and hold it parallel to the ground. The application will track your location
+        as you walk. You can perform a long press anywhere on the map to set your location there. Configure your sex and height
+        from the settings button.</string>
     <string name="action_settings">Settings</string>
     <string name="yaw">Yaw</string>
     <string name="pitch">Pitch</string>
